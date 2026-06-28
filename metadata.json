@@ -1,0 +1,6 @@
+{
+  "name": "로또 예측 시스템 및 LLM-Wiki",
+  "description": "기술 통계와 머신 러닝 기반의 데이터 로또 번호 예측 시스템 및 분석 정보, 예측 모델, 구현 코드를 제공하는 LLM-Wiki 플랫폼입니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
