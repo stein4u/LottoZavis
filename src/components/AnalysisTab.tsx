@@ -1,48 +1,102 @@
-import React, { useState, useEffect } from "react";
-import { LottoStats } from "../types";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, AreaChart, Area, Legend 
+import React, { useState, useEffect, useCallback } from "react";
+import { LottoDraw, LottoStats, StatsWindow } from "../types";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area, Legend
 } from "recharts";
-import { TrendingUp, BarChart2, Hash, Percent, Award, BookOpen } from "lucide-react";
+import {
+  TrendingUp, BarChart2, Hash, Percent, Award, BookOpen,
+  RefreshCw, AlertCircle, Search, Clock, Database
+} from "lucide-react";
+
+const WINDOW_OPTIONS: { label: string; value: StatsWindow }[] = [
+  { label: "전체", value: "all" },
+  { label: "50회", value: 50 },
+  { label: "100회", value: 100 },
+  { label: "200회", value: 200 },
+];
 
 export default function AnalysisTab() {
   const [stats, setStats] = useState<LottoStats | null>(null);
+  const [latestDraw, setLatestDraw] = useState<LottoDraw | null>(null);
+  const [draws, setDraws] = useState<LottoDraw[]>([]);
+  const [drawsTotal, setDrawsTotal] = useState(0);
+  const [drawOffset, setDrawOffset] = useState(0);
+  const [searchRound, setSearchRound] = useState("");
+  const [windowFilter, setWindowFilter] = useState<StatsWindow>("all");
   const [loading, setLoading] = useState(true);
+  const [drawsLoading, setDrawsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async (window: StatsWindow) => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/lotto-stats");
-      const data = await res.json();
-      setStats(data);
-    } catch (err) {
-      console.error(err);
-      // Fallback local stats if server fails
-      setStats({
-        drawCount: 1125,
-        frequencies: Array.from({ length: 45 }, (_, i) => ({
-          number: i + 1,
-          count: 140 + Math.floor(Math.sin((i + 1) * 0.9) * 15)
-        })),
-        oddEvenRatio: { odd: 51.2, even: 48.8 },
-        consecutivePairsCount: 382,
-        sumRangeStats: [
-          { range: "50-100", percentage: 12.4 },
-          { range: "101-140", percentage: 41.2 },
-          { range: "141-180", percentage: 38.6 },
-          { range: "181-220", percentage: 7.8 }
-        ]
-      });
+      const query = window === "all" ? "" : `?window=${window}`;
+      const res = await fetch(`/api/lotto-stats${query}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "통계 데이터를 불러오지 못했습니다.");
+      }
+      setStats(await res.json());
+    } catch (err: any) {
+      setError(err.message || "통계 데이터를 불러오지 못했습니다.");
+      setStats(null);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchLatestDraw = useCallback(async () => {
+    try {
+      const res = await fetch("/api/draws/latest");
+      if (res.ok) setLatestDraw(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const fetchDraws = useCallback(async (offset: number, round?: number, append = false) => {
+    setDrawsLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: "20", offset: String(offset) });
+      if (round !== undefined) {
+        params.set("from", String(round));
+        params.set("to", String(round));
+        params.set("limit", "1");
+        params.set("offset", "0");
+      }
+      const res = await fetch(`/api/draws?${params}`);
+      if (!res.ok) throw new Error("당첨 이력을 불러오지 못했습니다.");
+      const data = await res.json();
+      setDrawsTotal(data.total);
+      setDraws((prev) => (append ? [...prev, ...data.draws] : data.draws));
+      setDrawOffset(offset + data.draws.length);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDrawsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats(windowFilter);
+    fetchLatestDraw();
+    fetchDraws(0);
+  }, [windowFilter, fetchStats, fetchLatestDraw, fetchDraws]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const round = Number(searchRound);
+    if (!round || Number.isNaN(round)) return;
+    fetchDraws(0, round);
   };
 
-  if (loading || !stats) {
+  const handleLoadMore = () => {
+    fetchDraws(drawOffset, undefined, true);
+  };
+
+  if (loading && !stats) {
     return (
       <div className="flex flex-col items-center justify-center py-24 space-y-4">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
@@ -51,142 +105,164 @@ export default function AnalysisTab() {
     );
   }
 
-  // Find Hot/Cold numbers
+  if (error || !stats) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 space-y-4 text-center">
+        <AlertCircle className="h-10 w-10 text-rose-400" />
+        <p className="text-sm text-slate-300">{error || "데이터를 불러올 수 없습니다."}</p>
+        <button
+          onClick={() => fetchStats(windowFilter)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg"
+        >
+          <RefreshCw className="h-4 w-4" />
+          다시 시도
+        </button>
+      </div>
+    );
+  }
+
   const sortedByFreq = [...stats.frequencies].sort((a, b) => b.count - a.count);
   const hotNumbers = sortedByFreq.slice(0, 6).map((x) => x.number);
   const coldNumbers = sortedByFreq.slice(-6).reverse().map((x) => x.number);
-
-  // Recharts colors
+  const topAbsence = [...stats.absence].sort((a, b) => b.drawsSince - a.drawsSince).slice(0, 6);
   const PIE_COLORS = ["#fb7185", "#3b82f6"];
   const pieData = [
     { name: "홀수 (Odd)", value: stats.oddEvenRatio.odd },
-    { name: "짝수 (Even)", value: stats.oddEvenRatio.even }
+    { name: "짝수 (Even)", value: stats.oddEvenRatio.even },
   ];
+  const updatedLabel = new Date(stats.lastUpdated).toLocaleString("ko-KR");
 
   return (
     <div className="space-y-8" id="analysis-tab-container">
-      {/* Header Info */}
-      <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-1.5">
-          <div className="inline-flex items-center space-x-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs font-mono">
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span>STATS BASE: 1 ~ {stats.drawCount} DRAWS COMPLETE</span>
+      {/* Disclaimer */}
+      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 text-xs text-amber-200/90 leading-relaxed">
+        본 <b>분석</b> 탭은 동행복권 공개 당첨 데이터 기반 통계입니다. <b>예측(Predictor)</b> 탭의 번호 추천은 아직 시뮬레이션이며 당첨을 보장하지 않습니다.
+      </div>
+
+      {/* Header */}
+      <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap gap-2">
+              <div className="inline-flex items-center space-x-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs font-mono">
+                <TrendingUp className="h-3.5 w-3.5" />
+                <span>1 ~ {stats.latestRound}회 ({stats.drawCount}회 집계)</span>
+              </div>
+              <div className="inline-flex items-center space-x-1.5 bg-slate-800 border border-slate-700 text-slate-400 px-3 py-1 rounded text-xs font-mono">
+                <Database className="h-3.5 w-3.5" />
+                <span>{stats.dataSource} 실데이터</span>
+              </div>
+              <div className="inline-flex items-center space-x-1.5 bg-slate-800 border border-slate-700 text-slate-400 px-3 py-1 rounded text-xs font-mono">
+                <Clock className="h-3.5 w-3.5" />
+                <span>갱신 {updatedLabel}</span>
+              </div>
+            </div>
+            <h2 className="text-2xl font-black text-white tracking-tight">로또 빅데이터 대시보드</h2>
+            <p className="text-xs text-slate-400">동행복권 당첨 번호 출현 패턴과 빈도수를 실데이터로 확인하세요.</p>
           </div>
-          <h2 className="text-2xl font-black text-white tracking-tight">로또 빅데이터 대시보드</h2>
-          <p className="text-xs text-slate-400">당첨 번호 출현 패턴과 빈도수의 장기 밀집 구간을 직관적으로 확인하세요.</p>
+
+          <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
+            <div className="p-4 bg-[#070B16] rounded border border-slate-800 text-center min-w-[140px]">
+              <p className="text-[10px] text-slate-500 font-mono font-bold uppercase">HOT (TOP 3)</p>
+              <p className="text-base font-black text-blue-400 mt-0.5">{hotNumbers.slice(0, 3).join(", ")}</p>
+            </div>
+            <div className="p-4 bg-[#070B16] rounded border border-slate-800 text-center min-w-[140px]">
+              <p className="text-[10px] text-slate-500 font-mono font-bold uppercase">COLD (TOP 3)</p>
+              <p className="text-base font-black text-rose-400 mt-0.5">{coldNumbers.slice(0, 3).join(", ")}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Rapid summary statistics cards */}
-        <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
-          <div className="p-4 bg-[#070B16] rounded border border-slate-800 text-center min-w-[140px]">
-            <p className="text-[10px] text-slate-500 font-mono font-bold uppercase">HOT NUMBERS (TOP 3)</p>
-            <p className="text-base font-black text-blue-400 mt-0.5">
-              {hotNumbers.slice(0, 3).join(", ")}
-            </p>
-          </div>
-          <div className="p-4 bg-[#070B16] rounded border border-slate-800 text-center min-w-[140px]">
-            <p className="text-[10px] text-slate-500 font-mono font-bold uppercase">COLD NUMBERS (TOP 3)</p>
-            <p className="text-base font-black text-rose-400 mt-0.5">
-              {coldNumbers.slice(0, 3).join(", ")}
-            </p>
-          </div>
+        {/* Window filter */}
+        <div className="flex flex-wrap gap-2">
+          {WINDOW_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setWindowFilter(opt.value)}
+              className={`px-3 py-1.5 rounded text-xs font-mono border transition-colors ${
+                windowFilter === opt.value
+                  ? "bg-blue-600 border-blue-500 text-white"
+                  : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Charts Row */}
+      {/* Latest draw banner */}
+      {latestDraw && (
+        <div className="bg-[#0D1426] rounded-xl p-5 border border-blue-500/20 shadow-xl">
+          <p className="text-[10px] font-mono text-blue-400 uppercase mb-2">최신 당첨번호</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="text-sm font-bold text-white">{latestDraw.round}회</span>
+            <span className="text-xs text-slate-400">{latestDraw.date}</span>
+            <div className="flex gap-2">
+              {latestDraw.numbers.map((n) => (
+                <span key={n} className="h-8 w-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
+                  {n}
+                </span>
+              ))}
+              <span className="text-slate-500 self-center">+</span>
+              <span className="h-8 w-8 rounded-full bg-rose-500/80 text-white text-xs font-bold flex items-center justify-center">
+                {latestDraw.bonus}
+              </span>
+            </div>
+            <span className="text-xs text-slate-400 font-mono">
+              합 {latestDraw.sum} · 홀{latestDraw.oddCount} 짝{6 - (latestDraw.oddCount ?? 0)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left: Number Frequency (Bar Chart) */}
         <div className="lg:col-span-2 bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <div className="flex items-center space-x-2">
               <BarChart2 className="h-5 w-5 text-blue-400" />
               <h3 className="font-bold text-white text-base">45개 번호 누적 출현 빈도</h3>
             </div>
-            <span className="text-[10px] font-mono text-slate-500">1-45 Accumulative Frequencies</span>
+            <span className="text-[10px] font-mono text-slate-500">보너스 포함</span>
           </div>
-          
+
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={stats.frequencies}
-                margin={{ top: 10, right: 5, left: -20, bottom: 5 }}
-              >
+              <BarChart data={stats.frequencies} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.4} />
-                <XAxis 
-                  dataKey="number" 
-                  stroke="#64748b" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  interval={1}
-                />
-                <YAxis 
-                  stroke="#64748b" 
-                  fontSize={10} 
-                  tickLine={false} 
-                />
-                <Tooltip 
+                <XAxis dataKey="number" stroke="#64748b" fontSize={10} tickLine={false} interval={1} />
+                <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
+                <Tooltip
                   contentStyle={{ backgroundColor: "#070B16", borderRadius: "8px", border: "1px solid #1e293b", color: "#fff", fontSize: "11px", fontFamily: "monospace" }}
                   labelFormatter={(value) => `번호: ${value}번`}
-                  formatter={(value: any) => [`${value}회 출현`, "누적 빈도"]}
+                  formatter={(value: number | undefined) => [`${value ?? 0}회 출현`, "누적 빈도 (보너스 포함)"]}
                 />
-                <Bar 
-                  dataKey="count" 
-                  radius={[2, 2, 0, 0]}
-                >
+                <Bar dataKey="count" radius={[2, 2, 0, 0]}>
                   {stats.frequencies.map((entry, index) => {
                     const isHot = hotNumbers.includes(entry.number);
                     const isCold = coldNumbers.includes(entry.number);
                     return (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={isHot ? "#3b82f6" : isCold ? "#fb7185" : "#475569"} 
-                        opacity={isHot ? 1 : isCold ? 0.7 : 0.5}
-                      />
+                      <Cell key={`cell-${index}`} fill={isHot ? "#3b82f6" : isCold ? "#fb7185" : "#475569"} opacity={isHot ? 1 : isCold ? 0.7 : 0.5} />
                     );
                   })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-          
-          <div className="flex items-center space-x-4 text-xs justify-center pt-2 text-slate-500 font-mono">
-            <span className="flex items-center space-x-1.5">
-              <span className="h-2.5 w-2.5 rounded-sm bg-blue-500 inline-block"></span>
-              <span>상위 빈출 (Hot)</span>
-            </span>
-            <span className="flex items-center space-x-1.5">
-              <span className="h-2.5 w-2.5 rounded-sm bg-slate-600 inline-block"></span>
-              <span>평균 빈출 (Normal)</span>
-            </span>
-            <span className="flex items-center space-x-1.5">
-              <span className="h-2.5 w-2.5 rounded-sm bg-rose-400 inline-block"></span>
-              <span>하위 빈출 (Cold)</span>
-            </span>
-          </div>
         </div>
 
-        {/* Right: Pie Chart and technical cards */}
         <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl flex flex-col justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center space-x-2 border-b border-slate-800 pb-4">
               <Percent className="h-5 w-5 text-blue-400" />
-              <h3 className="font-bold text-white text-base">홀짝 비율 수렴</h3>
+              <h3 className="font-bold text-white text-base">홀짝 비율 (메인 6개)</h3>
             </div>
-            
             <div className="h-52 w-full flex items-center justify-center relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={75}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={4} dataKey="value">
+                    {pieData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -194,104 +270,160 @@ export default function AnalysisTab() {
                   <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: "11px", color: "#94a3b8" }} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute text-center">
-                <p className="text-[10px] text-slate-500 font-mono font-bold uppercase leading-none">대수의 법칙</p>
-                <p className="text-lg font-black text-slate-300 font-mono mt-1">~50 : 50</p>
-              </div>
             </div>
           </div>
-
           <div className="bg-[#070B16] rounded p-4 border border-slate-800 space-y-2.5">
             <h4 className="text-xs font-bold text-blue-400 uppercase tracking-widest flex items-center space-x-1.5 font-mono">
               <Award className="h-4 w-4" />
-              <span>통계 필터 상식</span>
+              <span>연속 번호 포함 회차</span>
             </h4>
             <p className="text-xs text-slate-400 leading-relaxed">
-              역대 로또 당첨 조합 중 홀수와 짝수가 3:3 또는 2:4, 4:2를 이룬 확률은 전체의 약 <b className="text-white font-semibold">82.4%</b>에 달합니다. 
-              인공지능 모델은 이 범주 외의 어긋나는 번호를 자동 감점하여 고품격 번호만 골라냅니다.
+              선택 구간 중 연속 번호 쌍이 포함된 회차: <b className="text-white">{stats.consecutivePairsCount}회</b>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Sum Distribution Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Sum Range distribution */}
-        <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center space-x-2 border-b border-slate-800 pb-4">
-            <Hash className="h-5 w-5 text-blue-400" />
-            <h3 className="font-bold text-white text-base">로또 번호 합계 (Sum Range) 분포</h3>
+      {/* Insight cards + sum */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="bg-[#0D1426] rounded-xl p-6 border border-slate-800 shadow-xl space-y-3">
+          <h3 className="font-bold text-white text-sm">미출현 TOP 6 (보너스 포함)</h3>
+          <div className="space-y-2">
+            {topAbsence.map(({ number, drawsSince }) => (
+              <div key={number} className="flex justify-between text-xs font-mono">
+                <span className="text-slate-300">{number}번</span>
+                <span className="text-rose-400">{drawsSince}회째 미출현</span>
+              </div>
+            ))}
           </div>
-          
-          <div className="h-64">
+        </div>
+
+        <div className="bg-[#0D1426] rounded-xl p-6 border border-slate-800 shadow-xl space-y-3">
+          <h3 className="font-bold text-white text-sm">구간별 출현 (보너스 포함)</h3>
+          {stats.zoneStats.map((z) => (
+            <div key={z.zone} className="space-y-1">
+              <div className="flex justify-between text-xs font-mono">
+                <span className="text-slate-300">{z.zone}</span>
+                <span className="text-blue-400">{z.percentage}%</span>
+              </div>
+              <div className="h-1.5 bg-slate-800 rounded overflow-hidden">
+                <div className="h-full bg-blue-500 rounded" style={{ width: `${z.percentage}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-[#0D1426] rounded-xl p-6 border border-slate-800 shadow-xl space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-800 pb-3">
+            <Hash className="h-5 w-5 text-blue-400" />
+            <h3 className="font-bold text-white text-sm">합계 구간 (메인 6개)</h3>
+          </div>
+          <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={stats.sumRangeStats}
-                margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="colorSum" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <AreaChart data={stats.sumRangeStats} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.4} />
-                <XAxis dataKey="range" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} />
+                <XAxis dataKey="range" stroke="#64748b" fontSize={10} />
+                <YAxis stroke="#64748b" fontSize={10} />
                 <Tooltip formatter={(value) => `${value}%`} contentStyle={{ backgroundColor: "#070B16", border: "1px solid #1e293b", color: "#fff", fontSize: "11px" }} />
-                <Area 
-                  type="monotone" 
-                  dataKey="percentage" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorSum)" 
-                />
+                <Area type="monotone" dataKey="percentage" stroke="#3b82f6" strokeWidth={2} fill="#3b82f6" fillOpacity={0.2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-            번호의 합계는 <b className="text-white">101~180 구간</b>이 당첨의 절대 주류(약 79.8%)를 이룹니다.
-          </p>
         </div>
+      </div>
 
-        {/* Hot/Cold table and analysis list */}
-        <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center space-x-2 border-b border-slate-800 pb-4">
-            <BookOpen className="h-5 w-5 text-blue-400" />
-            <h3 className="font-bold text-white text-base">당첨 빈도 극대 및 극소 번호</h3>
+      {/* Hot/Cold */}
+      <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
+        <div className="flex items-center space-x-2 border-b border-slate-800 pb-4">
+          <BookOpen className="h-5 w-5 text-blue-400" />
+          <h3 className="font-bold text-white text-base">당첨 빈도 극대 및 극소 번호</h3>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <span className="text-[11px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded font-mono">Hot Top 6</span>
+            <div className="flex flex-wrap gap-2 pt-1.5">
+              {hotNumbers.map((num) => (
+                <span key={num} className="h-9 w-9 rounded-full bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center">{num}</span>
+              ))}
+            </div>
           </div>
-
-          <div className="space-y-4">
-            {/* Hot set */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded font-mono">자주 등장한 Top 6 번호 (Hot)</span>
-              <div className="flex space-x-2.5 pt-1.5">
-                {hotNumbers.map((num) => (
-                  <span key={num} className="h-9 w-9 rounded-full bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center border border-blue-500 shadow-sm">
-                    {num}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Cold set */}
-            <div className="space-y-2 pt-1.5">
-              <span className="text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded font-mono">뜸하게 등장한 Bottom 6 번호 (Cold)</span>
-              <div className="flex space-x-2.5 pt-1.5">
-                {coldNumbers.map((num) => (
-                  <span key={num} className="h-9 w-9 rounded-full bg-slate-800 text-slate-300 font-extrabold text-xs flex items-center justify-center border border-slate-700 shadow-sm">
-                    {num}
-                  </span>
-                ))}
-              </div>
-            </div>
-            
-            <div className="text-[11px] text-slate-500 pt-3 border-t border-slate-800 leading-normal">
-              기술 통계 데이터는 매주 토요일 당첨 번호 추첨 직후 서버 데이터 가공 스케줄러에 의해 무결성 검증을 거쳐 실시간 업데이트됩니다.
+          <div className="space-y-2">
+            <span className="text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded font-mono">Cold Bottom 6</span>
+            <div className="flex flex-wrap gap-2 pt-1.5">
+              {coldNumbers.map((num) => (
+                <span key={num} className="h-9 w-9 rounded-full bg-slate-800 text-slate-300 font-extrabold text-xs flex items-center justify-center">{num}</span>
+              ))}
             </div>
           </div>
         </div>
+        <p className="text-[11px] text-slate-500 pt-2 border-t border-slate-800">
+          통계는 동행복권 공개 데이터를 서버에서 가공합니다. `POST /api/admin/refresh`로 최신 회차를 반영할 수 있습니다.
+        </p>
+      </div>
+
+      {/* Draw history table */}
+      <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <h3 className="font-bold text-white text-base">당첨번호 이력</h3>
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <input
+              type="number"
+              min={1}
+              placeholder="회차 검색"
+              value={searchRound}
+              onChange={(e) => setSearchRound(e.target.value)}
+              className="px-3 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-white w-28"
+            />
+            <button type="submit" className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded">
+              <Search className="h-3.5 w-3.5" />
+              조회
+            </button>
+            <button
+              type="button"
+              onClick={() => { setSearchRound(""); fetchDraws(0); }}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded"
+            >
+              전체
+            </button>
+          </form>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs font-mono">
+            <thead>
+              <tr className="text-slate-500 border-b border-slate-800">
+                <th className="text-left py-2 pr-4">회차</th>
+                <th className="text-left py-2 pr-4">날짜</th>
+                <th className="text-left py-2 pr-4">당첨번호</th>
+                <th className="text-left py-2 pr-4">보너스</th>
+                <th className="text-left py-2 pr-4">합계</th>
+                <th className="text-left py-2">홀짝</th>
+              </tr>
+            </thead>
+            <tbody>
+              {draws.map((d) => (
+                <tr key={d.round} className="border-b border-slate-800/50 text-slate-300">
+                  <td className="py-2.5 pr-4 text-white font-bold">{d.round}</td>
+                  <td className="py-2.5 pr-4">{d.date}</td>
+                  <td className="py-2.5 pr-4">{d.numbers.join(", ")}</td>
+                  <td className="py-2.5 pr-4 text-rose-400">{d.bonus}</td>
+                  <td className="py-2.5 pr-4">{d.sum}</td>
+                  <td className="py-2.5">{d.oddCount}홀 {6 - (d.oddCount ?? 0)}짝</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {draws.length < drawsTotal && (
+          <button
+            onClick={handleLoadMore}
+            disabled={drawsLoading}
+            className="w-full py-2 text-xs font-mono text-blue-400 hover:text-blue-300 border border-slate-800 rounded hover:border-slate-700 disabled:opacity-50"
+          >
+            {drawsLoading ? "불러오는 중..." : `더 보기 (${draws.length}/${drawsTotal})`}
+          </button>
+        )}
       </div>
     </div>
   );

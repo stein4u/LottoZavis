@@ -3,6 +3,9 @@ import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
+import { queryDraws, enrichDraw } from "./server/lotto/drawsApi.js";
+import { ensureLottoData, getCacheSnapshot, incrementalRefresh } from "./server/lotto/ingest.js";
+import { computeStats, parseStatsWindow } from "./server/lotto/statsEngine.js";
 
 // Initialize Gemini API SDK if key exists
 let ai: GoogleGenAI | null = null;
@@ -26,35 +29,57 @@ async function startServer() {
   app.use(express.json());
   app.use(cors());
 
-  // Historical Lotto Win frequencies (simulated Korean Lotto Stats)
-  // Korean lotto draws 1-45. Here are hot numbers (most frequent) and cold numbers (least frequent)
-  const lottoStats = {
-    drawCount: 1125,
-    frequencies: Array.from({ length: 45 }, (_, i) => {
-      const num = i + 1;
-      // Simulate real Korean Lotto stats where some numbers appear slightly more often (e.g. 43, 34, 1, 17, 27 are hot)
-      let baseFreq = 145 + Math.floor(Math.sin(num * 0.9) * 15) + Math.floor(Math.cos(num * 0.5) * 8);
-      if (num === 43) baseFreq += 18;
-      if (num === 34) baseFreq += 15;
-      if (num === 1) baseFreq += 12;
-      if (num === 17) baseFreq += 10;
-      if (num === 9) baseFreq -= 15; // cold
-      if (num === 23) baseFreq -= 12; // cold
-      return { number: num, count: baseFreq };
-    }),
-    oddEvenRatio: { odd: 51.2, even: 48.8 },
-    consecutivePairsCount: 382, // times consecutive numbers appeared
-    sumRangeStats: [
-      { range: "50-100", percentage: 12.4 },
-      { range: "101-140", percentage: 41.2 },
-      { range: "141-180", percentage: 38.6 },
-      { range: "181-220", percentage: 7.8 }
-    ]
-  };
+  await ensureLottoData();
 
-  // API Endpoints
   app.get("/api/lotto-stats", (req, res) => {
-    res.json(lottoStats);
+    const cache = getCacheSnapshot();
+    if (!cache || cache.draws.length === 0) {
+      return res.status(503).json({ error: "Lotto draw data is not loaded yet." });
+    }
+
+    const window = parseStatsWindow(req.query.window);
+    if (window === null) {
+      return res.status(400).json({ error: "Invalid window. Use all, 50, 100, or 200." });
+    }
+
+    res.json(computeStats(cache.draws, window, cache.lastUpdated));
+  });
+
+  app.get("/api/draws", (req, res) => {
+    const cache = getCacheSnapshot();
+    if (!cache || cache.draws.length === 0) {
+      return res.status(503).json({ error: "Lotto draw data is not loaded yet." });
+    }
+
+    const from = req.query.from !== undefined ? Number(req.query.from) : undefined;
+    const to = req.query.to !== undefined ? Number(req.query.to) : undefined;
+    const limit = req.query.limit !== undefined ? Math.min(Number(req.query.limit), 100) : 20;
+    const offset = req.query.offset !== undefined ? Number(req.query.offset) : 0;
+
+    if (Number.isNaN(limit) || Number.isNaN(offset) || (from !== undefined && Number.isNaN(from)) || (to !== undefined && Number.isNaN(to))) {
+      return res.status(400).json({ error: "Invalid query parameters." });
+    }
+
+    res.json(queryDraws(cache.draws, { from, to, limit, offset }));
+  });
+
+  app.get("/api/draws/latest", (req, res) => {
+    const cache = getCacheSnapshot();
+    if (!cache || cache.draws.length === 0) {
+      return res.status(503).json({ error: "Lotto draw data is not loaded yet." });
+    }
+
+    const latest = [...cache.draws].sort((a, b) => b.round - a.round)[0];
+    res.json(enrichDraw(latest));
+  });
+
+  app.post("/api/admin/refresh", async (req, res) => {
+    try {
+      const result = await incrementalRefresh();
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Refresh failed." });
+    }
   });
 
   // Lotto Prediction algorithm simulation with customization options
