@@ -3,9 +3,10 @@ import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
-import { queryDraws, enrichDraw } from "./server/lotto/drawsApi.js";
+import { queryDraws, enrichDraw, parseContainsNumber } from "./server/lotto/drawsApi.js";
 import { ensureLottoData, getCacheSnapshot, incrementalRefresh } from "./server/lotto/ingest.js";
 import { computeStats, parseStatsWindow } from "./server/lotto/statsEngine.js";
+import { buildNumberProfile } from "./server/lotto/numberProfile.js";
 import { generatePrediction } from "./server/lotto/predictEngine.js";
 
 // Initialize Gemini API SDK if key exists
@@ -46,6 +47,25 @@ async function startServer() {
     res.json(computeStats(cache.draws, window, cache.lastUpdated));
   });
 
+  app.get("/api/lotto-stats/number/:n", (req, res) => {
+    const cache = getCacheSnapshot();
+    if (!cache || cache.draws.length === 0) {
+      return res.status(503).json({ error: "Lotto draw data is not loaded yet." });
+    }
+
+    const number = Number(req.params.n);
+    if (!Number.isInteger(number) || number < 1 || number > 45) {
+      return res.status(400).json({ error: "Invalid number. Use 1-45." });
+    }
+
+    const window = parseStatsWindow(req.query.window);
+    if (window === null) {
+      return res.status(400).json({ error: "Invalid window. Use all, 50, 100, or 200." });
+    }
+
+    res.json(buildNumberProfile(cache.draws, window, number));
+  });
+
   app.get("/api/draws", (req, res) => {
     const cache = getCacheSnapshot();
     if (!cache || cache.draws.length === 0) {
@@ -56,12 +76,17 @@ async function startServer() {
     const to = req.query.to !== undefined ? Number(req.query.to) : undefined;
     const limit = req.query.limit !== undefined ? Math.min(Number(req.query.limit), 100) : 20;
     const offset = req.query.offset !== undefined ? Number(req.query.offset) : 0;
+    const contains = parseContainsNumber(req.query.contains);
+
+    if (contains === null) {
+      return res.status(400).json({ error: "Invalid contains. Use a number between 1 and 45." });
+    }
 
     if (Number.isNaN(limit) || Number.isNaN(offset) || (from !== undefined && Number.isNaN(from)) || (to !== undefined && Number.isNaN(to))) {
       return res.status(400).json({ error: "Invalid query parameters." });
     }
 
-    res.json(queryDraws(cache.draws, { from, to, limit, offset }));
+    res.json(queryDraws(cache.draws, { from, to, limit, offset, contains }));
   });
 
   app.get("/api/draws/latest", (req, res) => {

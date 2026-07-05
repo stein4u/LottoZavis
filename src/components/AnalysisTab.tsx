@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { LottoDraw, LottoStats, StatsWindow } from "../types";
+import NumberDrillPanel from "./NumberDrillPanel";
+import { exportDrawsCsv, exportStatsCsv } from "../lib/csvExport";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, Legend
 } from "recharts";
 import {
   TrendingUp, BarChart2, Hash, Percent, Award, BookOpen,
-  RefreshCw, AlertCircle, Search, Clock, Database
+  RefreshCw, AlertCircle, Search, Clock, Database, Download, Link2
 } from "lucide-react";
 
 const WINDOW_OPTIONS: { label: string; value: StatsWindow }[] = [
@@ -24,6 +26,7 @@ export default function AnalysisTab() {
   const [drawOffset, setDrawOffset] = useState(0);
   const [searchRound, setSearchRound] = useState("");
   const [windowFilter, setWindowFilter] = useState<StatsWindow>("all");
+  const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [drawsLoading, setDrawsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +99,8 @@ export default function AnalysisTab() {
     fetchDraws(drawOffset, undefined, true);
   };
 
+  const openDrillDown = (num: number) => setSelectedNumber(num);
+
   if (loading && !stats) {
     return (
       <div className="flex flex-col items-center justify-center py-24 space-y-4">
@@ -136,7 +141,8 @@ export default function AnalysisTab() {
     <div className="space-y-8" id="analysis-tab-container">
       {/* Disclaimer */}
       <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 text-xs text-amber-200/90 leading-relaxed">
-        본 <b>분석</b> 탭과 <b>예측(Predictor)</b> 탭 모두 동행복권 공개 당첨 데이터 기반 통계를 사용합니다. 번호 추천은 당첨을 보장하지 않으며 참고용입니다.
+        본 <b>분석</b> 탭과 <b>예측(Predictor)</b> 탭 모두 동행복권 공개 당첨 데이터 기반 통계를 사용합니다.
+        동반 출현·빈도 패턴은 과거 데이터 탐색용이며, 번호 추천·당첨을 보장하지 않습니다.
       </div>
 
       {/* Header */}
@@ -173,21 +179,31 @@ export default function AnalysisTab() {
           </div>
         </div>
 
-        {/* Window filter */}
-        <div className="flex flex-wrap gap-2">
-          {WINDOW_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setWindowFilter(opt.value)}
-              className={`px-3 py-1.5 rounded text-xs font-mono border transition-colors ${
-                windowFilter === opt.value
-                  ? "bg-blue-600 border-blue-500 text-white"
-                  : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        {/* Window filter + export */}
+        <div className="flex flex-wrap items-center gap-2 justify-between">
+          <div className="flex flex-wrap gap-2">
+            {WINDOW_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setWindowFilter(opt.value)}
+                className={`px-3 py-1.5 rounded text-xs font-mono border transition-colors ${
+                  windowFilter === opt.value
+                    ? "bg-blue-600 border-blue-500 text-white"
+                    : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => exportStatsCsv(stats)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs rounded font-mono"
+          >
+            <Download className="h-3.5 w-3.5" />
+            통계 내보내기
+          </button>
         </div>
       </div>
 
@@ -238,7 +254,15 @@ export default function AnalysisTab() {
                   labelFormatter={(value) => `번호: ${value}번`}
                   formatter={(value: number | undefined) => [`${value ?? 0}회 출현`, "누적 빈도 (보너스 포함)"]}
                 />
-                <Bar dataKey="count" radius={[2, 2, 0, 0]}>
+                <Bar
+                  dataKey="count"
+                  radius={[2, 2, 0, 0]}
+                  cursor="pointer"
+                  onClick={(entry) => {
+                    const num = (entry as { payload?: { number?: number } })?.payload?.number;
+                    if (typeof num === "number") openDrillDown(num);
+                  }}
+                >
                   {stats.frequencies.map((entry, index) => {
                     const isHot = hotNumbers.includes(entry.number);
                     const isCold = coldNumbers.includes(entry.number);
@@ -290,10 +314,15 @@ export default function AnalysisTab() {
           <h3 className="font-bold text-white text-sm">미출현 TOP 6 (보너스 포함)</h3>
           <div className="space-y-2">
             {topAbsence.map(({ number, drawsSince }) => (
-              <div key={number} className="flex justify-between text-xs font-mono">
+              <button
+                key={number}
+                type="button"
+                onClick={() => openDrillDown(number)}
+                className="w-full flex justify-between text-xs font-mono hover:bg-slate-800/50 rounded px-1 py-0.5 transition-colors"
+              >
                 <span className="text-slate-300">{number}번</span>
                 <span className="text-rose-400">{drawsSince}회째 미출현</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -332,6 +361,44 @@ export default function AnalysisTab() {
         </div>
       </div>
 
+      {/* Co-occurrence */}
+      <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="flex items-center space-x-2">
+            <Link2 className="h-5 w-5 text-blue-400" />
+            <h3 className="font-bold text-white text-base">동반 출현 TOP 20</h3>
+          </div>
+          <span className="text-[10px] font-mono text-slate-500">보너스 포함 · 같은 회차</span>
+        </div>
+        <p className="text-[10px] text-slate-500">
+          메인 6개 + 보너스 번호가 같은 회차에 함께 나온 쌍의 과거 빈도입니다. 당첨 예측이 아닙니다.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs font-mono">
+            <thead>
+              <tr className="text-slate-500 border-b border-slate-800">
+                <th className="text-left py-2 pr-4">번호 쌍</th>
+                <th className="text-left py-2 pr-4">동반 출현</th>
+                <th className="text-left py-2">비율</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(stats.topPairs ?? []).map(({ a, b, count, rate }) => (
+                <tr key={`${a}-${b}`} className="border-b border-slate-800/50 text-slate-300">
+                  <td className="py-2 pr-4">
+                    <button type="button" onClick={() => openDrillDown(a)} className="text-blue-400 hover:underline">{a}</button>
+                    {" ↔ "}
+                    <button type="button" onClick={() => openDrillDown(b)} className="text-blue-400 hover:underline">{b}</button>
+                  </td>
+                  <td className="py-2 pr-4">{count}회</td>
+                  <td className="py-2">{rate}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Hot/Cold */}
       <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
         <div className="flex items-center space-x-2 border-b border-slate-800 pb-4">
@@ -343,7 +410,14 @@ export default function AnalysisTab() {
             <span className="text-[11px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded font-mono">Hot Top 6</span>
             <div className="flex flex-wrap gap-2 pt-1.5">
               {hotNumbers.map((num) => (
-                <span key={num} className="h-9 w-9 rounded-full bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center">{num}</span>
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => openDrillDown(num)}
+                  className="h-9 w-9 rounded-full bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center hover:ring-2 hover:ring-blue-400 transition-shadow"
+                >
+                  {num}
+                </button>
               ))}
             </div>
           </div>
@@ -351,7 +425,14 @@ export default function AnalysisTab() {
             <span className="text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded font-mono">Cold Bottom 6</span>
             <div className="flex flex-wrap gap-2 pt-1.5">
               {coldNumbers.map((num) => (
-                <span key={num} className="h-9 w-9 rounded-full bg-slate-800 text-slate-300 font-extrabold text-xs flex items-center justify-center">{num}</span>
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => openDrillDown(num)}
+                  className="h-9 w-9 rounded-full bg-slate-800 text-slate-300 font-extrabold text-xs flex items-center justify-center hover:ring-2 hover:ring-slate-500 transition-shadow"
+                >
+                  {num}
+                </button>
               ))}
             </div>
           </div>
@@ -365,7 +446,17 @@ export default function AnalysisTab() {
       <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <h3 className="font-bold text-white text-base">당첨번호 이력</h3>
-          <form onSubmit={handleSearch} className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => exportDrawsCsv(draws)}
+              disabled={draws.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs rounded font-mono disabled:opacity-50"
+            >
+              <Download className="h-3.5 w-3.5" />
+              표시된 이력 내보내기
+            </button>
+            <form onSubmit={handleSearch} className="flex gap-2">
             <input
               type="number"
               min={1}
@@ -386,6 +477,7 @@ export default function AnalysisTab() {
               전체
             </button>
           </form>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -425,6 +517,12 @@ export default function AnalysisTab() {
           </button>
         )}
       </div>
+
+      <NumberDrillPanel
+        number={selectedNumber}
+        window={windowFilter}
+        onClose={() => setSelectedNumber(null)}
+      />
     </div>
   );
 }

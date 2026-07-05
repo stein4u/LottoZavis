@@ -10,6 +10,32 @@ export type ModelType = "random_forest" | "xgboost" | "lstm";
 
 export type StatsWindow = "all" | 50 | 100 | 200;
 
+export interface CoOccurrencePair {
+  a: number;
+  b: number;
+  count: number;
+  rate: number;
+}
+
+export interface PartnerCount {
+  number: number;
+  count: number;
+  rate: number;
+}
+
+export interface NumberProfile {
+  number: number;
+  window: StatsWindow | number | string;
+  drawCount: number;
+  latestRound: number;
+  frequencyIncludesBonus: boolean;
+  coOccurrenceIncludesBonus: boolean;
+  count: number;
+  drawsSince: number;
+  zone: "1-15" | "16-30" | "31-45";
+  topPartners: PartnerCount[];
+}
+
 export interface PredictionResult {
   numbers: number[];
   method: "weighted-random";
@@ -40,6 +66,7 @@ export interface LottoStats {
   lastUpdated: string;
   dataSource: string;
   frequencyIncludesBonus: boolean;
+  coOccurrenceIncludesBonus: boolean;
   frequencies: { number: number; count: number }[];
   oddEvenRatio: { odd: number; even: number };
   consecutivePairsCount: number;
@@ -50,6 +77,7 @@ export interface LottoStats {
     count: number;
     percentage: number;
   }[];
+  topPairs: CoOccurrencePair[];
 }
 
 export interface WikiArticle {

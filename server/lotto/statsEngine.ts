@@ -1,3 +1,4 @@
+import { computePairCounts, topGlobalPairs } from "./coOccurrence.js";
 import type { LottoDraw, LottoStats, StatsWindow } from "./types.js";
 
 const SUM_RANGES = [
@@ -91,6 +92,9 @@ export function computeStats(
     return { number: num, drawsSince };
   });
 
+  const pairCounts = computePairCounts(draws);
+  const topPairs = topGlobalPairs(pairCounts, drawCount, 20);
+
   return {
     drawCount,
     latestRound,
@@ -98,7 +102,9 @@ export function computeStats(
     lastUpdated,
     dataSource: "dhlottery",
     frequencyIncludesBonus: true,
+    coOccurrenceIncludesBonus: true,
     frequencies,
+    topPairs,
     oddEvenRatio: {
       odd: totalOddEven > 0 ? Math.round((oddTotal / totalOddEven) * 1000) / 10 : 0,
       even: totalOddEven > 0 ? Math.round((evenTotal / totalOddEven) * 1000) / 10 : 0,
