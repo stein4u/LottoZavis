@@ -21,9 +21,9 @@ sources:
 ## 현재 상태
 
 - **방법론**: cryingbird 블로그 79편 흡수 완료
-- **공식 데이터**: 동행복권 **1~1230회** (앱 캐시 `data/lotto-draws.json`, 2026-07-03 갱신)
-- **최신 회차**: 1230회 — `3, 8, 9, 22, 28, 42` + 보너스 `45` (2026-06-27)
-- 로컬 CSV(`raw/lotto-draws.csv`)는 1231회까지 있을 수 있음 — **앱 캐시가 canonical**
+- **공식 데이터**: 동행복권 **1~1231회** (앱 캐시 `data/lotto-draws.json`, 2026-07-05 갱신)
+- **최신 회차**: 1231회 — `4, 13, 14, 18, 31, 38` + 보너스 `15` (2026-07-04)
+- 앱 캐시 = 위키 Tier A canonical (`POST /api/admin/refresh` 또는 `npm run refresh:lotto`)
 
 ## 소스
 
@@ -37,8 +37,8 @@ sources:
 ## 이론 + 데이터 결합
 
 1. **이론** (cryingbird): [[concepts/bernoulli-and-lln|베르누이]] + [[concepts/frequency-deviation|이격]] + [[concepts/combination-over-numbers|조합 분석]]
-2. **데이터** (동행복권): 1230회 Tier A 실측 빈도 — [[analyses/frequency-snapshot-tier-a-2026-07-05]], 30게임 행보 — [[analyses/freq-trend-tier-a-2026-07-05]]
-3. **검증**: 1230회 Tier A에서도 번호 빈도 162~212로 이격 존재 → 대수의 법칙 "수렴 중" 해석. 단, **다음 회차 확률은 불변**.
+2. **데이터** (동행복권): 1231회 Tier A 실측 빈도 — [[analyses/frequency-snapshot-tier-a-2026-07-05]], 30게임 행보 — [[analyses/freq-trend-tier-a-2026-07-05]]
+3. **검증**: 1231회 Tier A에서도 번호 빈도 162~212로 이격 존재 → 대수의 법칙 "수렴 중" 해석. 단, **다음 회차 확률은 불변**.
 
 ## 비판적 결론
 
@@ -51,7 +51,6 @@ sources:
 1. ~~Phase 0.5: Tier A analyses 재산출~~ ✓ (2026-07-05)
 2. Phase 1: LottoZavis WikiTab ← `wiki/` Reader
 3. 특정 번호·회차 deep-dive (`wiki-query`)
-4. 앱 캐시 1231회 ingest 후 Tier A pages 재생성 (`generate_tier_a_wiki_pages.py`)
 
 ## 현재 결론
 

@@ -1,7 +1,7 @@
 ---
 type: analysis
 title: "위키 종합 결론 2026-07-05"
-description: "cryingbird 방법론 + 동행복권 1230회 Tier A 데이터 종합"
+description: "cryingbird 방법론 + 동행복권 1231회 Tier A 데이터 종합"
 tags: [analysis, synthesis, overview]
 created: 2026-07-05
 updated: 2026-07-05
@@ -15,7 +15,7 @@ sources:
 
 > **Tier A canonical** — 아래 수치는 LottoZavis 앱 `data/lotto-draws.json` (1~1230회, 보너스 포함) 기준. Tier B legacy — [[POLICY]], [[analyses/frequency-snapshot-2026-07-05]]
 
-방법론(cryingbird 79편)과 실데이터(동행복권 1~1230회)를 결합한 위키의 **현재 결론**.
+방법론(cryingbird 79편)과 실데이터(동행복권 1~1231회)를 결합한 위키의 **현재 결론**.
 
 ## 1. 로또의 본질
 
@@ -25,9 +25,9 @@ sources:
 | 단기 (10~30게임) | [[concepts/frequency-deviation|빈도 이격]] | 통계적 편차 활용 여지 |
 | 장기 (1000회+) | 대수의 법칙 | 출현 균등화 **수렴 중** |
 
-1230회 Tier A 실측: 번호별 빈도 **162~212** (기대 191.33) → 장기에도 이격 존재. → [[analyses/frequency-snapshot-tier-a-2026-07-05]]
+1231회 Tier A 실측: 번호별 빈도 **162~212** (기대 191.49) → 장기에도 이격 존재. → [[analyses/frequency-snapshot-tier-a-2026-07-05]]
 
-단기 freq30 이격 **1~10** (기대 4.67), 30회 미출현 0개 → [[analyses/freq-trend-tier-a-2026-07-05]]
+단기 freq30 이격 **1~9** (기대 4.67), 30회 미출현 0개 → [[analyses/freq-trend-tier-a-2026-07-05]]
 
 ## 2. 분석의 실제 목표
 

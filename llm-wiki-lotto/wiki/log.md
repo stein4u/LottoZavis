@@ -82,3 +82,10 @@ append-only. 최신 항목이 아래에 추가됩니다.
 - 생성: analyses/frequency-snapshot-tier-a-2026-07-05, analyses/freq-trend-tier-a-2026-07-05, entities/draws/draw-1230
 - 갱신: analyses/wiki-synthesis, overview, index, POLICY; legacy Tier B pages → canonical 링크
 - 참고: 로컬 CSV 1231회는 draw-1231 entity에만; 앱 ingest 후 Tier A pages 재생성 필요
+
+## [2026-07-05] housekeeping | 1231회 ingest + Tier A refresh
+
+- ingest: `scripts/refresh-lotto.ts` → `data/lotto-draws.json` 1231회 (+1 draw)
+- Tier A pages 재생성 (1231회, expected 191.49, freq30 1~9)
+- 갱신: overview, index, wiki-synthesis, dhlottery-official-draws, draw-1231
+- OpenSpec wiki-phase-0-policy 아카이브 완료 → GitHub #57, #63–#65 close

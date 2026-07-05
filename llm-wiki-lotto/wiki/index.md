@@ -23,14 +23,14 @@ sources: []
 - [[sources/analysis-stories-series]] — 로또 분석 이야기 1~37
 - [[sources/per-draw-predictions]] — 회차별 예상·분석·복기 18편
 - [[sources/lotto-bible-misc]] — 바이블·공지·기타
-- [[sources/dhlottery-official-draws]] — 동행복권 공식 당첨 (앱 캐시 1230회 + 로컬 CSV)
+- [[sources/dhlottery-official-draws]] — 동행복권 공식 당첨 (앱 캐시 1231회)
 
 ## Entities
 
 ### Draws (회차)
 
-- [[entities/draws/draw-1230]] — 앱 캐시 최신 1230회 (2026-06-27)
-- [[entities/draws/draw-1231]] — 로컬 CSV 1231회 (앱 캐시 미반영)
+- [[entities/draws/draw-1231]] — 앱 캐시 최신 1231회 (2026-07-04)
+- [[entities/draws/draw-1230]] — 1230회 (2026-06-27)
 - 전체: [[sources/dhlottery-official-draws]] (`raw/lotto-draws.csv`)
 - cryingbird 예측: [[sources/per-draw-predictions]]
 
@@ -61,7 +61,7 @@ _아직 없음 (조합 단위 분석 우선)_
 
 ### Tier A (canonical — 앱 `data/lotto-draws.json`)
 
-- [[analyses/frequency-snapshot-tier-a-2026-07-05]] — 1230회 보너스 포함 빈도 스냅샷
+- [[analyses/frequency-snapshot-tier-a-2026-07-05]] — 1231회 보너스 포함 빈도 스냅샷
 - [[analyses/freq-trend-tier-a-2026-07-05]] — 30게임 Tier A freq30 행보
 - [[analyses/wiki-synthesis-2026-07-05]] — 위키 종합 결론
 

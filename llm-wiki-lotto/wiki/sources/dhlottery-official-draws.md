@@ -19,7 +19,7 @@ sources:
 | 파일 | 설명 |
 |------|------|
 | `data/lotto-draws.json` | LottoZavis 앱 runtime 캐시 — **위키 Tier A 기준** |
-| 최신 회차 | **1230회** (2026-06-27): `3, 8, 9, 22, 28, 42` + 보너스 `45` |
+| 최신 회차 | **1231회** (2026-07-04): `4, 13, 14, 18, 31, 38` + 보너스 `15` |
 | Tier A 분석 | [[analyses/frequency-snapshot-tier-a-2026-07-05]], [[analyses/freq-trend-tier-a-2026-07-05]] |
 
 ## 로컬 raw (git 제외)
@@ -71,17 +71,17 @@ GET https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={회차}
 
 ## 스냅샷 통계
 
-### Tier A canonical (1230회, 앱 캐시)
+### Tier A canonical (1231회, 앱 캐시)
 
 출처: `data/lotto-draws.json` — [[analyses/frequency-snapshot-tier-a-2026-07-05]]
 
 | 구분 | 값 |
 |------|-----|
-| 기대 (보너스 포함) | 191.33회/번호 |
+| 기대 (보너스 포함) | 191.49회/번호 |
 | 범위 | 162~212 |
-| TOP 3 | 27(212), 34(208), 33·13(206) |
+| TOP 3 | 27(212), 34(208), 13(207) |
 | BOTTOM 3 | 9(162), 22(164), 23(168) |
-| 최신 | [[entities/draws/draw-1230]] |
+| 최신 | [[entities/draws/draw-1231]] |
 
 ### Tier B legacy (1231회, 로컬 CSV)
 
