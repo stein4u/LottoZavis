@@ -89,3 +89,9 @@ append-only. 최신 항목이 아래에 추가됩니다.
 - Tier A pages 재생성 (1231회, expected 191.49, freq30 1~9)
 - 갱신: overview, index, wiki-synthesis, dhlottery-official-draws, draw-1231
 - OpenSpec wiki-phase-0-policy 아카이브 완료 → GitHub #57, #63–#65 close
+
+## [2026-07-05] app | Phase 1 — WikiTab Reader
+
+- API: `GET /api/wiki/pages`, `GET /api/wiki/page?id=`
+- WikiTab: `llm-wiki-lotto/wiki/` markdown + `[[wikilink]]` 내비게이션
+- `preseededArticles` deprecated; Gemini prompt POLICY 톤 정렬

@@ -8,6 +8,7 @@ import { ensureLottoData, getCacheSnapshot, incrementalRefresh } from "./server/
 import { computeStats, parseStatsWindow } from "./server/lotto/statsEngine.js";
 import { buildNumberProfile } from "./server/lotto/numberProfile.js";
 import { generatePrediction } from "./server/lotto/predictEngine.js";
+import { getWikiPage, parseWikiNav } from "./server/wiki/wikiReader.js";
 
 // Initialize Gemini API SDK if key exists
 let ai: GoogleGenAI | null = null;
@@ -108,6 +109,25 @@ async function startServer() {
     }
   });
 
+  app.get("/api/wiki/pages", (_req, res) => {
+    res.json({ pages: parseWikiNav() });
+  });
+
+  app.get("/api/wiki/page", (req, res) => {
+    const id = String(req.query.id ?? "").trim();
+    if (!id) {
+      return res.status(400).json({ error: "Missing id query parameter." });
+    }
+
+    const page = getWikiPage(id);
+    if (!page) {
+      return res.status(404).json({ error: "Wiki page not found." });
+    }
+
+    const navItem = parseWikiNav().find((item) => item.id === page.id);
+    res.json({ ...page, category: navItem?.category ?? page.category });
+  });
+
   // Statistical recommendation backed by real draw statistics
   app.post("/api/predict", (req, res) => {
     const cache = getCacheSnapshot();
@@ -147,17 +167,25 @@ async function startServer() {
 
     try {
       const prompt = `
-        당신은 로또 번호 예측 시스템 및 데이터 분석 전문 AI 학술 연구원입니다.
-        아래 기사 혹은 지식 베이스의 주제 및 내용을 기반으로 더 학술적이고, 수학적/통계학적 배경이 풍부하며, 흥미로운 최신 연구 및 머신러닝 동향 내용을 3~4개의 상세한 단락으로 추가 작성해주세요. 
-        글은 위키피디아 스타일에 맞춰 정중하고 객관적인 어조로 마크다운(Markdown) 포맷으로 한국어로 작성해 주세요. 
-        코드 예시나 수식이 필요하면 적극적으로 포함해 주세요.
-        
-        [주제 번호]: ${pageId}
-        [문서 제목]: ${title}
+        당신은 LottoZavis 로또 분석 위키 편집 보조 AI입니다.
+        아래 위키 문서를 기반으로, **POLICY 톤**을 지켜 2~3개 단락을 추가하세요.
+
+        반드시 지킬 것:
+        - 로또는 확률 게임이며 1등 확률 1/8,145,060은 변하지 않음
+        - cryingbird 방법론 = 조합 공간 축소·필터링 프레임
+        - LottoZavis Predictor = 실데이터 빈도 기반 가중 추천(weighted-random), 당첨 보장 없음
+
+        하지 말 것:
+        - LSTM/RF/XGBoost 학습으로 당첨 확률 상승 주장
+        - precision/recall/F1/confidence 등 ML 평가 지표를 사실처럼 제시
+        - "확실한 당첨법", "다음 회차 반드시 나온다" 등 표현
+
+        마크다운으로 한국어 작성. 기존 내용 아래 "### AI 보조 해설" 제목으로 덧붙이세요.
+
+        [문서 ID]: ${pageId}
+        [제목]: ${title}
         [기존 내용]:
         ${currentContent}
-        
-        기존 내용을 존중하면서, 그 아래에 "### 🧠 AI 연구원 추가 해설" 이라는 제목과 함께 마크다운 형식으로 덧붙여질 풍부한 연관 정보를 생성하세요.
       `;
 
       const response = await ai.models.generateContent({
@@ -193,13 +221,13 @@ async function startServer() {
 
     try {
       const prompt = `
-        사용자가 로또 예측 시스템, 확률 통계, 또는 머신러닝 모델에 관한 질문을 했습니다.
-        이에 대해 수학적 확률 이론, 데이터 분석 지식, 그리고 인공지능 예측 모델링 관점에서 전문적이면서도 쉽게 설명하는 답변을 한국어로 작성해 주세요.
-        답변은 깔끔한 마크다운(Markdown) 포맷을 사용하여 핵심에 강조 표시를 하고, 수식이나 구체적인 예를 들어 설명해 주세요.
-        
-        사용자 질문: "${question}"
-        
-        정중하고 신뢰할 수 있는 톤앤매너로 작성해 주세요.
+        사용자가 LottoZavis 로또 분석 위키와 관련된 질문을 했습니다.
+        **POLICY 톤**으로 한국어 마크다운 답변을 작성하세요.
+
+        한다: 확률 게임 전제, 조합 필터·실데이터 참고, 출처·한계 명시, Predictor는 weighted-random 추천(당첨 보장 없음)
+        하지 않는다: ML 학습으로 당첨률 상승, F1/confidence 등 지표를 사실처럼, 당첨 보장 표현
+
+        질문: "${question}"
       `;
 
       const response = await ai.models.generateContent({

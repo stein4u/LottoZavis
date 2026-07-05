@@ -49,8 +49,9 @@ sources:
 ## 다음 단계
 
 1. ~~Phase 0.5: Tier A analyses 재산출~~ ✓ (2026-07-05)
-2. Phase 1: LottoZavis WikiTab ← `wiki/` Reader
-3. 특정 번호·회차 deep-dive (`wiki-query`)
+2. ~~Phase 1: LottoZavis WikiTab ← `wiki/` Reader~~ ✓ (2026-07-05)
+3. Phase 2: RAG `/api/wiki/ask` (위키 corpus 기반)
+4. 특정 번호·회차 deep-dive (`wiki-query`)
 
 ## 현재 결론
 

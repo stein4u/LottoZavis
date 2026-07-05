@@ -1,3 +1,4 @@
+/** @deprecated Phase 1 WikiTab reads llm-wiki-lotto/wiki/ via /api/wiki. Kept for reference only. */
 import { WikiArticle } from "../types";
 
 export const preseededArticles: WikiArticle[] = [
