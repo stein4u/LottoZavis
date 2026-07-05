@@ -95,3 +95,9 @@ append-only. 최신 항목이 아래에 추가됩니다.
 - API: `GET /api/wiki/pages`, `GET /api/wiki/page?id=`
 - WikiTab: `llm-wiki-lotto/wiki/` markdown + `[[wikilink]]` 내비게이션
 - `preseededArticles` deprecated; Gemini prompt POLICY 톤 정렬
+
+## [2026-07-05] app | Phase 2 — wiki-query RAG
+
+- `server/wiki/wikiIndex.ts`: H2 chunk index, keyword retrieval, Tier A boost
+- API: `POST /api/wiki/ask` → citations + coverage; `GET /api/wiki/index-meta`
+- WikiTab: 참고 위키 citation chips, coverage none 안내, AI 탐색기 (wiki-query)

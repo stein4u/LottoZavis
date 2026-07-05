@@ -65,7 +65,7 @@ function parseSimpleFrontmatter(raw: string): { meta: Record<string, string | st
   return { meta, body: normalized.slice(end + 5) };
 }
 
-function readPageFile(id: string): { meta: Record<string, string | string[]>; body: string } | null {
+export function readPageFile(id: string): { meta: Record<string, string | string[]>; body: string } | null {
   const normalized = normalizeId(id);
   const filePath = path.join(WIKI_ROOT, `${normalized}.md`);
 

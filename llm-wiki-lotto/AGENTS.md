@@ -74,12 +74,15 @@ sources: []          # raw/ 내 원본 파일 경로 목록
 
 각 워크플로는 `.cursor/skills/`에 스킬로 등록되어 있다. 해당 작업 시 스킬을 읽고 따른다.
 
-| 작업 | 스킬 | 트리거 예시 |
-|------|------|-------------|
+| 작업 | 스킬 / 경로 | 트리거 예시 |
+|------|-------------|-------------|
 | Ingest | `wiki-ingest` | "raw/xxx.csv ingest 해줘", "소스 흡수" |
-| Query | `wiki-query` | "가장 많이 나온 번호는?", "위키 질의" |
+| Query (에이전트) | `wiki-query` | "가장 많이 나온 번호는?", "위키 질의" |
+| Query (앱) | `POST /api/wiki/ask` | WikiTab AI 탐색기 — **read-only**, wiki corpus RAG |
 | Lint | `wiki-lint` | "위키 lint 해줘", "건강 점검" |
 | Tier A refresh | (스크립트) | 앱 캐시 갱신 후 `compute_tier_a_from_app_cache.py` → `generate_tier_a_wiki_pages.py` |
+
+**앱 vs 에이전트 경계:** ingest·lint·Tier A refresh·`analyses/`·`log.md` 작성은 에이전트 스킬/스크립트만 수행한다. LottoZavis `/api/wiki/ask`는 `llm-wiki-lotto/wiki/`를 **읽기만** 하며 markdown을 수정하지 않는다.
 
 ### Ingest (소스 흡수)
 

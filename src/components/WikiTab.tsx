@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { User } from "firebase/auth";
-import { fetchWikiNav, fetchWikiPage, WikiNavItem } from "../lib/wikiApi";
+import { fetchWikiNav, fetchWikiPage, askWikiQuestion, WikiNavItem, WikiCitation, WikiCoverage } from "../lib/wikiApi";
 import { saveWikiComment, listenToWikiComments, saveQAItem, fetchQAItems, WikiComment, WikiQAItem } from "../lib/firebase";
 import WikiMarkdown from "./WikiMarkdown";
 import Markdown from "react-markdown";
@@ -41,6 +41,8 @@ export default function WikiTab({ user, onLogin }: WikiTabProps) {
   const [isAsking, setIsAsking] = useState(false);
   const [customQuestion, setCustomQuestion] = useState("");
   const [customAnswer, setCustomAnswer] = useState<string | null>(null);
+  const [askCitations, setAskCitations] = useState<WikiCitation[]>([]);
+  const [askCoverage, setAskCoverage] = useState<WikiCoverage | null>(null);
 
   const [comments, setComments] = useState<WikiComment[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -173,16 +175,15 @@ export default function WikiTab({ user, onLogin }: WikiTabProps) {
 
     setIsAsking(true);
     setCustomAnswer(null);
+    setAskCitations([]);
+    setAskCoverage(null);
 
     try {
-      const response = await fetch("/api/wiki/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: customQuestion }),
-      });
-      const data = await response.json();
-      if (data.success) {
+      const data = await askWikiQuestion(customQuestion);
+      if (data.success && data.answer) {
         setCustomAnswer(data.answer);
+        setAskCitations(data.citations ?? []);
+        setAskCoverage(data.coverage ?? "ok");
         await saveQAItem({
           question: customQuestion,
           answer: data.answer,
@@ -192,7 +193,8 @@ export default function WikiTab({ user, onLogin }: WikiTabProps) {
         setCustomQuestion("");
         loadQA();
       } else {
-        setCustomAnswer(data.answer || "답변 생성에 실패했습니다.");
+        setCustomAnswer(data.answer || data.error || "답변 생성에 실패했습니다.");
+        setAskCoverage(data.coverage ?? "none");
       }
     } catch (err) {
       console.error(err);
@@ -302,10 +304,10 @@ export default function WikiTab({ user, onLogin }: WikiTabProps) {
         <div className="bg-[#0D1426] rounded-xl p-5 border border-slate-800 shadow-xl space-y-4">
           <div className="flex items-center space-x-2">
             <Sparkles className="h-5 w-5 text-blue-400 animate-pulse" />
-            <h4 className="font-bold text-xs tracking-wider text-white uppercase">AI 탐색기 (Phase 2 preview)</h4>
+            <h4 className="font-bold text-xs tracking-wider text-white uppercase">AI 탐색기 (wiki-query)</h4>
           </div>
           <p className="text-[11px] text-slate-400 leading-normal">
-            로또 분석·확률·위키 정책에 대해 질문하세요. 당첨 보장 없는 통계·조합 필터 관점으로 답합니다.
+            위키 corpus에서 관련 페이지를 찾아 POLICY 톤으로 답합니다. 통계·확률 질문은 Tier A canonical을 우선합니다.
           </p>
 
           <form onSubmit={handleAskAI} className="space-y-2">
@@ -343,15 +345,50 @@ export default function WikiTab({ user, onLogin }: WikiTabProps) {
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <span className="text-xs font-mono font-bold text-blue-400 flex items-center space-x-1">
                 <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-                <span>AI SEARCH RESULT</span>
+                <span>WIKI-QUERY RESULT</span>
               </span>
-              <button onClick={() => setCustomAnswer(null)} className="text-xs text-slate-400 hover:text-white cursor-pointer">
+              <button
+                onClick={() => {
+                  setCustomAnswer(null);
+                  setAskCitations([]);
+                  setAskCoverage(null);
+                }}
+                className="text-xs text-slate-400 hover:text-white cursor-pointer"
+              >
                 닫기
               </button>
             </div>
+            {askCoverage === "none" && (
+              <div className="flex items-start gap-2 text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  위키에서 직접 관련된 내용을 찾지 못했습니다. 아래 답변은 POLICY 톤 안내이며, 통계·번호는 위키에 없으면
+                  제시되지 않습니다.
+                </span>
+              </div>
+            )}
             <div className="markdown-body prose prose-invert text-xs sm:text-sm max-w-none text-slate-200 leading-relaxed">
               <Markdown>{customAnswer}</Markdown>
             </div>
+            {askCitations.length > 0 && (
+              <div className="pt-2 border-t border-slate-800 space-y-2">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">참고 위키</p>
+                <div className="flex flex-wrap gap-2">
+                  {askCitations.map((cite) => (
+                    <button
+                      key={cite.id}
+                      type="button"
+                      onClick={() => navigateToPage(cite.id)}
+                      className="text-left max-w-full px-3 py-2 rounded-lg bg-[#070B16] border border-slate-700/80 hover:border-blue-500/50 hover:bg-blue-500/5 transition-colors cursor-pointer"
+                      title={cite.excerpt}
+                    >
+                      <span className="block text-[11px] font-bold text-blue-300 truncate">{cite.title}</span>
+                      <span className="block text-[9px] font-mono text-slate-500 truncate">{cite.id}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

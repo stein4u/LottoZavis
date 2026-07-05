@@ -9,6 +9,12 @@ import { computeStats, parseStatsWindow } from "./server/lotto/statsEngine.js";
 import { buildNumberProfile } from "./server/lotto/numberProfile.js";
 import { generatePrediction } from "./server/lotto/predictEngine.js";
 import { getWikiPage, parseWikiNav } from "./server/wiki/wikiReader.js";
+import {
+  buildWikiAskPrompt,
+  getWikiIndexMeta,
+  initWikiIndex,
+  retrieveWikiChunks,
+} from "./server/wiki/wikiIndex.js";
 
 // Initialize Gemini API SDK if key exists
 let ai: GoogleGenAI | null = null;
@@ -33,6 +39,7 @@ async function startServer() {
   app.use(cors());
 
   await ensureLottoData();
+  initWikiIndex();
 
   app.get("/api/lotto-stats", (req, res) => {
     const cache = getCacheSnapshot();
@@ -207,44 +214,50 @@ async function startServer() {
     }
   });
 
-  // LLM Q&A search query
+  app.get("/api/wiki/index-meta", (_req, res) => {
+    res.json(getWikiIndexMeta());
+  });
+
+  // LLM Q&A search query (wiki corpus RAG)
   app.post("/api/wiki/ask", async (req, res) => {
     const { question } = req.body;
-    
+    const trimmedQuestion = String(question ?? "").trim();
+
+    if (!trimmedQuestion) {
+      return res.status(400).json({ success: false, error: "Question is required." });
+    }
+
     if (!ai) {
       return res.status(200).json({
         success: false,
         error: "Gemini API key가 등록되어 있지 않습니다. .env 파일에 GEMINI_API_KEY를 추가해 주세요.",
-        answer: "Gemini API key가 제공되지 않아 AI의 답변을 작성할 수 없습니다. 관리자에게 문의하여 환경 변수를 설정하세요."
+        answer: "Gemini API key가 제공되지 않아 AI의 답변을 작성할 수 없습니다. 관리자에게 문의하여 환경 변수를 설정하세요.",
+        citations: [],
+        coverage: "none",
       });
     }
 
     try {
-      const prompt = `
-        사용자가 LottoZavis 로또 분석 위키와 관련된 질문을 했습니다.
-        **POLICY 톤**으로 한국어 마크다운 답변을 작성하세요.
-
-        한다: 확률 게임 전제, 조합 필터·실데이터 참고, 출처·한계 명시, Predictor는 weighted-random 추천(당첨 보장 없음)
-        하지 않는다: ML 학습으로 당첨률 상승, F1/confidence 등 지표를 사실처럼, 당첨 보장 표현
-
-        질문: "${question}"
-      `;
+      const retrieval = retrieveWikiChunks(trimmedQuestion);
+      const prompt = buildWikiAskPrompt(trimmedQuestion, retrieval.chunks, retrieval.coverage);
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: prompt
+        contents: prompt,
       });
 
       const answerText = response.text || "";
       res.json({
         success: true,
-        answer: answerText
+        answer: answerText,
+        citations: retrieval.citations,
+        coverage: retrieval.coverage,
       });
     } catch (error: any) {
       console.error("Gemini Q&A failed:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "답변을 구상하는 도중 오류가 발생했습니다."
+        error: error.message || "답변을 구상하는 도중 오류가 발생했습니다.",
       });
     }
   });
