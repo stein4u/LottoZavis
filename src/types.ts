@@ -12,12 +12,10 @@ export type StatsWindow = "all" | 50 | 100 | 200;
 
 export interface PredictionResult {
   numbers: number[];
-  confidence: number;
-  metrics: {
-    precision: string;
-    recall: string;
-    f1: string;
-  };
+  method: "weighted-random";
+  statsWindow: StatsWindow | number | string;
+  latestRound: number;
+  frequencyIncludesBonus: boolean;
   timestamp: string;
 }
 

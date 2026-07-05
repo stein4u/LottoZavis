@@ -6,6 +6,7 @@ import { GoogleGenAI } from "@google/genai";
 import { queryDraws, enrichDraw } from "./server/lotto/drawsApi.js";
 import { ensureLottoData, getCacheSnapshot, incrementalRefresh } from "./server/lotto/ingest.js";
 import { computeStats, parseStatsWindow } from "./server/lotto/statsEngine.js";
+import { generatePrediction } from "./server/lotto/predictEngine.js";
 
 // Initialize Gemini API SDK if key exists
 let ai: GoogleGenAI | null = null;
@@ -82,102 +83,29 @@ async function startServer() {
     }
   });
 
-  // Lotto Prediction algorithm simulation with customization options
+  // Statistical recommendation backed by real draw statistics
   app.post("/api/predict", (req, res) => {
+    const cache = getCacheSnapshot();
+    if (!cache || cache.draws.length === 0) {
+      return res.status(503).json({ success: false, error: "Lotto draw data is not loaded yet." });
+    }
+
+    const window = parseStatsWindow(req.body.window);
+    if (window === null) {
+      return res.status(400).json({ success: false, error: "Invalid window. Use all, 50, 100, or 200." });
+    }
+
     const { modelType, oddEvenBias, hotColdBias, excludeNumbers = [] } = req.body;
-    
-    // modelType can be: "random_forest", "xgboost", "lstm"
-    // oddEvenBias: "balanced", "odd_heavy", "even_heavy"
-    // hotColdBias: "balanced", "hot_heavy", "cold_heavy"
-    
-    const numbersPool: { number: number; weight: number }[] = [];
-    
-    for (let i = 1; i <= 45; i++) {
-      if (excludeNumbers.includes(i)) continue;
-      
-      let weight = 100;
-      
-      // Apply hot/cold bias
-      const isHot = [1, 13, 17, 27, 34, 43].includes(i);
-      const isCold = [9, 22, 23, 30, 41].includes(i);
-      
-      if (hotColdBias === "hot_heavy") {
-        if (isHot) weight += 50;
-        if (isCold) weight -= 30;
-      } else if (hotColdBias === "cold_heavy") {
-        if (isCold) weight += 50;
-        if (isHot) weight -= 30;
-      }
-      
-      // Apply odd/even bias
-      const isOdd = i % 2 !== 0;
-      if (oddEvenBias === "odd_heavy") {
-        if (isOdd) weight += 40;
-        else weight -= 20;
-      } else if (oddEvenBias === "even_heavy") {
-        if (!isOdd) weight += 40;
-        else weight -= 20;
-      }
-      
-      // Model-specific tweaks
-      if (modelType === "random_forest") {
-        // RF favors rolling frequency & pairs
-        if (i % 7 === 3 || i % 9 === 2) weight += 15;
-      } else if (modelType === "xgboost") {
-        // XGB favors regression indicators & sum limits
-        if (i >= 10 && i <= 38) weight += 10;
-      } else if (modelType === "lstm") {
-        // LSTM recurrent sequence simulation
-        if (i % 5 === 0 || i % 8 === 4) weight += 20;
-      }
-      
-      // Ensure positive weight
-      weight = Math.max(10, weight);
-      numbersPool.push({ number: i, weight });
-    }
+    const stats = computeStats(cache.draws, window, cache.lastUpdated);
 
-    // Weighted random selection of 6 unique numbers
-    const selected: number[] = [];
-    const tempPool = [...numbersPool];
-    
-    for (let s = 0; s < 6; s++) {
-      if (tempPool.length === 0) break;
-      
-      const totalWeight = tempPool.reduce((acc, item) => acc + item.weight, 0);
-      let rand = Math.random() * totalWeight;
-      let cumulative = 0;
-      let selectedIdx = 0;
-      
-      for (let idx = 0; idx < tempPool.length; idx++) {
-        cumulative += tempPool[idx].weight;
-        if (rand <= cumulative) {
-          selectedIdx = idx;
-          break;
-        }
-      }
-      
-      selected.push(tempPool[selectedIdx].number);
-      tempPool.splice(selectedIdx, 1);
-    }
-    
-    // Sort in ascending order
-    selected.sort((a, b) => a - b);
-    
-    // Generate simulated model confidence scores & evaluation metrics
-    const confidence = Math.floor(78 + Math.random() * 18);
-    const metrics = modelType === "random_forest" 
-      ? { precision: "81.4%", recall: "79.2%", f1: "80.3%" }
-      : modelType === "xgboost"
-      ? { precision: "83.1%", recall: "77.5%", f1: "80.2%" }
-      : { precision: "84.7%", recall: "81.0%", f1: "82.8%" };
-
-    res.json({
-      success: true,
-      numbers: selected,
-      confidence,
-      metrics,
-      timestamp: new Date().toISOString()
+    const result = generatePrediction(stats, {
+      modelType: modelType ?? "random_forest",
+      oddEvenBias: oddEvenBias ?? "balanced",
+      hotColdBias: hotColdBias ?? "balanced",
+      excludeNumbers,
     });
+
+    res.json(result);
   });
 
   // LLM Wiki enrichment endpoint

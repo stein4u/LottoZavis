@@ -136,7 +136,7 @@ export default function AnalysisTab() {
     <div className="space-y-8" id="analysis-tab-container">
       {/* Disclaimer */}
       <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 text-xs text-amber-200/90 leading-relaxed">
-        본 <b>분석</b> 탭은 동행복권 공개 당첨 데이터 기반 통계입니다. <b>예측(Predictor)</b> 탭의 번호 추천은 아직 시뮬레이션이며 당첨을 보장하지 않습니다.
+        본 <b>분석</b> 탭과 <b>예측(Predictor)</b> 탭 모두 동행복권 공개 당첨 데이터 기반 통계를 사용합니다. 번호 추천은 당첨을 보장하지 않으며 참고용입니다.
       </div>
 
       {/* Header */}

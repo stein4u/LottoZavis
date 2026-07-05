@@ -65,11 +65,13 @@ export interface SavedPrediction {
   id?: string;
   userId: string;
   numbers: number[];
-  confidence: number;
+  confidence?: number;
   modelType: string;
   createdAt: any;
   oddEvenRatio?: string;
   sum?: number;
+  statsWindow?: string | number;
+  latestRound?: number;
 }
 
 export interface WikiComment {
@@ -126,7 +128,9 @@ export const fetchPredictionsHistory = async (userId: string): Promise<SavedPred
         modelType: data.modelType,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
         oddEvenRatio: data.oddEvenRatio,
-        sum: data.sum
+        sum: data.sum,
+        statsWindow: data.statsWindow,
+        latestRound: data.latestRound,
       });
     });
     return history;

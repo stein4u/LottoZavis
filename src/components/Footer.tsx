@@ -16,7 +16,7 @@ export default function Footer() {
             </div>
             <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
               <b>분석</b> 탭은 동행복권 공개 당첨 데이터 기반 통계를 제공합니다.
-              <b> 예측(Predictor)</b> 탭은 통계 참고용 시뮬레이션이며, LLM-Wiki에서 알고리즘 개념을 확인할 수 있습니다.
+              <b>분석·예측(Predictor)</b> 탭 모두 동행복권 실데이터 통계를 사용합니다. 번호 추천은 참고용이며 당첨을 보장하지 않습니다.
             </p>
             <p className="text-[11px] text-rose-400 font-medium leading-normal bg-red-500/10 border border-red-500/20 p-3 rounded">
               ※ 주의: 로또는 매 회차 완벽히 무작위인 독립 확률 시행입니다. 예측 시스템은 통계적 참고용이며 당첨을 완전히 보장하지 않습니다. 무무리한 몰입을 삼가해 주세요.
