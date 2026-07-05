@@ -13,7 +13,7 @@ sources:
 # 30게임 빈도 행보 2026-07-05
 
 > **정책 drift (Tier B legacy)**  
-> `freq30`은 **메인 6볼만** 집계(`30×6÷45`, 기대 4.0)입니다. 앱 Analysis·위키 canonical 빈도는 **보너스 포함 Tier A** — [[POLICY]]. Tier A 행보 재산출은 Phase 0.5 예정.
+> `freq30`은 **메인 6볼만** 집계(`30×6÷45`, 기대 4.0)입니다. **Canonical Tier A** — [[analyses/freq-trend-tier-a-2026-07-05]] (앱 `data/lotto-draws.json`). 아래는 **역사적 Tier B 행보**입니다.
 
 `scripts/compute_freq_trend.py`로 `raw/lotto-draws.csv`에서 재계산. 결과: `raw/lotto-freq-trend.json`
 

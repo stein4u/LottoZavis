@@ -74,3 +74,11 @@ append-only. 최신 항목이 아래에 추가됩니다.
 - drift 콜아웃: analyses/frequency-snapshot, analyses/freq-trend, sources/dhlottery-official-draws, concepts/frequency-deviation, analyses/wiki-synthesis
 - 갱신: index.md, overview.md
 - repo: `.gitignore` — raw/scripts/.cursor/.obsidian 제외
+
+## [2026-07-05] refresh | Phase 0.5 — Tier A analyses (앱 캐시)
+
+- 소스: `data/lotto-draws.json` (1230회, lastUpdated 2026-07-03)
+- 스크립트: `compute_tier_a_from_app_cache.py`, `generate_tier_a_wiki_pages.py`
+- 생성: analyses/frequency-snapshot-tier-a-2026-07-05, analyses/freq-trend-tier-a-2026-07-05, entities/draws/draw-1230
+- 갱신: analyses/wiki-synthesis, overview, index, POLICY; legacy Tier B pages → canonical 링크
+- 참고: 로컬 CSV 1231회는 draw-1231 entity에만; 앱 ingest 후 Tier A pages 재생성 필요

@@ -6,8 +6,8 @@ tags: [overview]
 created: 2026-07-05
 updated: 2026-07-05
 sources:
+  - data/lotto-draws.json
   - raw/lotto/README.md
-  - raw/lotto-draws.csv
 ---
 
 # 로또 분석 위키 개요
@@ -21,8 +21,9 @@ sources:
 ## 현재 상태
 
 - **방법론**: cryingbird 블로그 79편 흡수 완료
-- **공식 데이터**: 동행복권 **1~1231회** 당첨 CSV 수집 (2026-07-05)
-- **최신 회차**: 1231회 — `4, 13, 14, 18, 31, 38` + 보너스 `15` (2026-07-04)
+- **공식 데이터**: 동행복권 **1~1230회** (앱 캐시 `data/lotto-draws.json`, 2026-07-03 갱신)
+- **최신 회차**: 1230회 — `3, 8, 9, 22, 28, 42` + 보너스 `45` (2026-06-27)
+- 로컬 CSV(`raw/lotto-draws.csv`)는 1231회까지 있을 수 있음 — **앱 캐시가 canonical**
 
 ## 소스
 
@@ -31,25 +32,26 @@ sources:
 | 방법론 | [[sources/cryingbird-blog-collection]] | `raw/lotto/` 79편 |
 | 이론 기초 | [[sources/chapter-a-foundation]] | 챕터 A 3부작 |
 | 교육 시리즈 | [[sources/analysis-stories-series]] | 분석 이야기 1~37 |
-| 당첨 데이터 | [[sources/dhlottery-official-draws]] | `raw/lotto-draws.csv` |
+| 당첨 데이터 | [[sources/dhlottery-official-draws]] | `data/lotto-draws.json` (앱), `raw/lotto-draws.csv` (로컬) |
 
 ## 이론 + 데이터 결합
 
 1. **이론** (cryingbird): [[concepts/bernoulli-and-lln|베르누이]] + [[concepts/frequency-deviation|이격]] + [[concepts/combination-over-numbers|조합 분석]]
-2. **데이터** (동행복권): 1231회 실측 빈도 — [[analyses/frequency-snapshot-2026-07-05]], 30게임 행보 — [[analyses/freq-trend-2026-07-05]]
-3. **검증**: 1231회에서도 번호 빈도 136~184로 이격 존재 → 대수의 법칙 "수렴 중" 해석. 단, **다음 회차 확률은 불변**.
+2. **데이터** (동행복권): 1230회 Tier A 실측 빈도 — [[analyses/frequency-snapshot-tier-a-2026-07-05]], 30게임 행보 — [[analyses/freq-trend-tier-a-2026-07-05]]
+3. **검증**: 1230회 Tier A에서도 번호 빈도 162~212로 이격 존재 → 대수의 법칙 "수렴 중" 해석. 단, **다음 회차 확률은 불변**.
 
 ## 비판적 결론
 
 - 방법론 = 조합 공간 축소·필터링. 1등 확률(1/8,145,060) 자체는 변하지 않음.
-- cryingbird 650회 빈도행보 예시는 **역사적 참고**. 현행 행보는 [[analyses/freq-trend-2026-07-05]] (공식 CSV 재계산).
+- cryingbird 650회 빈도행보 예시는 **역사적 참고**. 현행 Tier A 행보는 [[analyses/freq-trend-tier-a-2026-07-05]] (앱 캐시 재계산).
 - 2014~2016 회차 예측 글([[sources/per-draw-predictions]])은 사후 검증 없음.
 
 ## 다음 단계
 
-1. Phase 0.5: Tier A analyses 재산출 (앱 `data/lotto-draws.json` 기준)
+1. ~~Phase 0.5: Tier A analyses 재산출~~ ✓ (2026-07-05)
 2. Phase 1: LottoZavis WikiTab ← `wiki/` Reader
 3. 특정 번호·회차 deep-dive (`wiki-query`)
+4. 앱 캐시 1231회 ingest 후 Tier A pages 재생성 (`generate_tier_a_wiki_pages.py`)
 
 ## 현재 결론
 

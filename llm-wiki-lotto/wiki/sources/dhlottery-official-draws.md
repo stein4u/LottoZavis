@@ -6,6 +6,7 @@ tags: [source, dhlottery, official-data]
 created: 2026-07-05
 updated: 2026-07-05
 sources:
+  - data/lotto-draws.json
   - raw/lotto-draws.csv
   - raw/lotto-draws.meta.json
   - raw/lotto-draws.stats.json
@@ -13,11 +14,19 @@ sources:
 
 # 동행복권 공식 당첨 데이터
 
-## 원본
+## Canonical (앱 캐시)
 
 | 파일 | 설명 |
 |------|------|
-| `raw/lotto-draws.csv` | 1~1231회 전체 당첨 번호 |
+| `data/lotto-draws.json` | LottoZavis 앱 runtime 캐시 — **위키 Tier A 기준** |
+| 최신 회차 | **1230회** (2026-06-27): `3, 8, 9, 22, 28, 42` + 보너스 `45` |
+| Tier A 분석 | [[analyses/frequency-snapshot-tier-a-2026-07-05]], [[analyses/freq-trend-tier-a-2026-07-05]] |
+
+## 로컬 raw (git 제외)
+
+| 파일 | 설명 |
+|------|------|
+| `raw/lotto-draws.csv` | 1~1231회 (로컬 ingest; 앱보다 1회 앞설 수 있음) |
 | `raw/lotto-draws.meta.json` | API 메타·수집일 |
 | `raw/lotto-draws.stats.json` | 파생 통계 (빈도 등) |
 | `raw/lotto-freq-trend.json` | 30게임 빈도 행보 시계열 (1112~1231회) |
@@ -60,7 +69,21 @@ GET https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={회차}
 | firstWinamnt | 1등 1인당 당첨금 |
 | firstPrzwnerCo | 1등 당첨자 수 |
 
-## 스냅샷 통계 (1231회 기준)
+## 스냅샷 통계
+
+### Tier A canonical (1230회, 앱 캐시)
+
+출처: `data/lotto-draws.json` — [[analyses/frequency-snapshot-tier-a-2026-07-05]]
+
+| 구분 | 값 |
+|------|-----|
+| 기대 (보너스 포함) | 191.33회/번호 |
+| 범위 | 162~212 |
+| TOP 3 | 27(212), 34(208), 33·13(206) |
+| BOTTOM 3 | 9(162), 22(164), 23(168) |
+| 최신 | [[entities/draws/draw-1230]] |
+
+### Tier B legacy (1231회, 로컬 CSV)
 
 출처: `raw/lotto-draws.stats.json`
 
@@ -71,7 +94,7 @@ GET https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={회차}
 
 ### 전체 빈도 (기대값 164.13회/번호)
 
-> **Tier B legacy** — 메인 6볼만. Tier A canonical — [[POLICY]]
+> **Tier B legacy** — 메인 6볼만. Tier A canonical — [[analyses/frequency-snapshot-tier-a-2026-07-05]]
 
 | 구분 | 번호 | 출현 횟수 |
 |------|------|-----------|
@@ -92,14 +115,16 @@ GET https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={회차}
 |------|---------------------------|----------|
 | 기간 | 2014~2016 글·650회 스냅샷 | 1~1231회 전체 |
 | 용도 | 방법론·이론 | **실제 당첨 기록** |
-| 빈도 행보 | 650회 기준 수동 예시 | [[analyses/freq-trend-2026-07-05]] (1112~1231회 재계산) |
+| 빈도 행보 | 650회 기준 수동 예시 | Tier A: [[analyses/freq-trend-tier-a-2026-07-05]]; Tier B legacy: [[analyses/freq-trend-2026-07-05]] |
 
 > [!warning] 데이터 시대 차이
-> `concepts/frequency-trend`의 650회 예시는 역사적 참고용. 현행 행보는 `raw/lotto-freq-trend.json`·[[analyses/freq-trend-2026-07-05]] 기준.
+> `concepts/frequency-trend`의 650회 예시는 역사적 참고용. 현행 Tier A 행보 — [[analyses/freq-trend-tier-a-2026-07-05]].
 
 ## 관련
 
-- [[analyses/frequency-snapshot-2026-07-05]]
-- [[analyses/freq-trend-2026-07-05]]
+- [[analyses/frequency-snapshot-tier-a-2026-07-05]]
+- [[analyses/freq-trend-tier-a-2026-07-05]]
+- [[analyses/frequency-snapshot-2026-07-05]] (Tier B legacy)
+- [[analyses/freq-trend-2026-07-05]] (Tier B legacy)
 - [[concepts/frequency-deviation]]
 - [[sources/cryingbird-blog-collection]]

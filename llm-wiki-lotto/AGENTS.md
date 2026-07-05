@@ -79,6 +79,7 @@ sources: []          # raw/ 내 원본 파일 경로 목록
 | Ingest | `wiki-ingest` | "raw/xxx.csv ingest 해줘", "소스 흡수" |
 | Query | `wiki-query` | "가장 많이 나온 번호는?", "위키 질의" |
 | Lint | `wiki-lint` | "위키 lint 해줘", "건강 점검" |
+| Tier A refresh | (스크립트) | 앱 캐시 갱신 후 `compute_tier_a_from_app_cache.py` → `generate_tier_a_wiki_pages.py` |
 
 ### Ingest (소스 흡수)
 

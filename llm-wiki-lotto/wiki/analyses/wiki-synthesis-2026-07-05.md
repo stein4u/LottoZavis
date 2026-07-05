@@ -1,19 +1,21 @@
 ---
 type: analysis
 title: "위키 종합 결론 2026-07-05"
-description: "cryingbird 방법론 + 동행복권 1231회 데이터 종합"
+description: "cryingbird 방법론 + 동행복권 1230회 Tier A 데이터 종합"
 tags: [analysis, synthesis, overview]
 created: 2026-07-05
 updated: 2026-07-05
 sources:
   - raw/lotto/README.md
-  - raw/lotto-draws.csv
+  - data/lotto-draws.json
   - wiki/overview.md
 ---
 
 # 위키 종합 결론 2026-07-05
 
-방법론(cryingbird 79편)과 실데이터(동행복권 1~1231회)를 결합한 위키의 **현재 결론**.
+> **Tier A canonical** — 아래 수치는 LottoZavis 앱 `data/lotto-draws.json` (1~1230회, 보너스 포함) 기준. Tier B legacy — [[POLICY]], [[analyses/frequency-snapshot-2026-07-05]]
+
+방법론(cryingbird 79편)과 실데이터(동행복권 1~1230회)를 결합한 위키의 **현재 결론**.
 
 ## 1. 로또의 본질
 
@@ -23,9 +25,9 @@ sources:
 | 단기 (10~30게임) | [[concepts/frequency-deviation|빈도 이격]] | 통계적 편차 활용 여지 |
 | 장기 (1000회+) | 대수의 법칙 | 출현 균등화 **수렴 중** |
 
-1231회 실측: 번호별 빈도 **136~184** (Tier B 기대 164.13) → 장기에도 이격 존재. → [[analyses/frequency-snapshot-2026-07-05]] (legacy Tier B — [[POLICY]])
+1230회 Tier A 실측: 번호별 빈도 **162~212** (기대 191.33) → 장기에도 이격 존재. → [[analyses/frequency-snapshot-tier-a-2026-07-05]]
 
-단기 freq30 이격 **1~8** (기대 4.0), 30회 미출현 0개 → [[analyses/freq-trend-2026-07-05]]
+단기 freq30 이격 **1~10** (기대 4.67), 30회 미출현 0개 → [[analyses/freq-trend-tier-a-2026-07-05]]
 
 ## 2. 분석의 실제 목표
 
@@ -42,7 +44,7 @@ sources:
 | 도구 | 역할 | 위키 |
 |------|------|------|
 | 제외수 | 조합 공간 축소 | [[concepts/exclusion-numbers]] |
-| 빈도 이격·행보 | 단기 편차 읽기 | [[concepts/frequency-deviation]], [[concepts/frequency-trend]] — 실측: [[analyses/freq-trend-2026-07-05]] |
+| 빈도 이격·행보 | 단기 편차 읽기 | [[concepts/frequency-deviation]], [[concepts/frequency-trend]] — Tier A: [[analyses/freq-trend-tier-a-2026-07-05]] |
 | 기본 통계 필터 | 홀짝·총합·전멸 등 | [[concepts/basic-stat-filters]] |
 | 필터링 | 500조합 표본 추출 | [[concepts/filtering]] |
 
@@ -79,5 +81,5 @@ sources:
 - [[overview]]
 - [[sources/cryingbird-blog-collection]]
 - [[sources/dhlottery-official-draws]]
-- [[analyses/frequency-snapshot-2026-07-05]]
-- [[analyses/freq-trend-2026-07-05]]
+- [[analyses/frequency-snapshot-tier-a-2026-07-05]]
+- [[analyses/freq-trend-tier-a-2026-07-05]]

@@ -13,7 +13,7 @@ sources:
 # 빈도 스냅샷 2026-07-05
 
 > **정책 drift (Tier B legacy)**  
-> 본 페이지 수치는 **메인 6볼만** 집계(`1231×6÷45`, 7386볼)입니다. LottoZavis·위키 canonical은 **보너스 포함 Tier A** (`N×7÷45`, 기대 ≈191.4 @1231회) — [[POLICY]]. Tier A 재산출은 Phase 0.5 예정. 아래 표는 **역사적 스냅샷**으로만 참고.
+> 본 페이지 수치는 **메인 6볼만** 집계(`1231×6÷45`, 7386볼)입니다. **Canonical Tier A** — [[analyses/frequency-snapshot-tier-a-2026-07-05]] (앱 `data/lotto-draws.json`, 1230회). 아래 표는 **역사적 Tier B 스냅샷**으로만 참고.
 
 동행복권 공식 데이터 1~1231회 기준. 출처: `raw/lotto-draws.stats.json`
 
