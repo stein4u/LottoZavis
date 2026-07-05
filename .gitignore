@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# llm-wiki-lotto: wiki + AGENTS.md only (see llm-wiki-lotto/wiki/POLICY.md)
+llm-wiki-lotto/raw/
+llm-wiki-lotto/scripts/
+llm-wiki-lotto/.cursor/
+llm-wiki-lotto/.obsidian/

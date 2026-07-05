@@ -1,0 +1,5 @@
+# Local-only — not committed (see wiki/POLICY.md)
+raw/
+scripts/
+.cursor/
+.obsidian/
