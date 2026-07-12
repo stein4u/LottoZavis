@@ -8,8 +8,12 @@ const SUM_RANGES = [
   { label: "181-220", min: 181, max: 220 },
 ];
 
-function appearances(draw: LottoDraw): number[] {
-  return [...draw.numbers, draw.bonus];
+const VALID_WINDOWS = [30, 60, 90, 120, 150] as const;
+
+export const STATS_WINDOW_ERROR = "Invalid window. Use all, 30, 60, 90, 120, or 150.";
+
+function appearances(draw: LottoDraw, includeBonus: boolean): number[] {
+  return includeBonus ? [...draw.numbers, draw.bonus] : [...draw.numbers];
 }
 
 export function sliceDraws(draws: LottoDraw[], window: StatsWindow): LottoDraw[] {
@@ -21,15 +25,28 @@ export function sliceDraws(draws: LottoDraw[], window: StatsWindow): LottoDraw[]
 export function parseStatsWindow(value: unknown): StatsWindow | null {
   if (value === undefined || value === "all") return "all";
   const n = Number(value);
-  if ([50, 100, 200].includes(n)) return n as StatsWindow;
+  if ((VALID_WINDOWS as readonly number[]).includes(n)) return n as StatsWindow;
   return null;
+}
+
+export function parseIncludeBonus(value: unknown): boolean | null {
+  if (value === undefined || value === null || value === "") return true;
+  if (value === true || value === "true" || value === "1") return true;
+  if (value === false || value === "false" || value === "0") return false;
+  return null;
+}
+
+export interface ComputeStatsOptions {
+  includeBonus?: boolean;
 }
 
 export function computeStats(
   allDraws: LottoDraw[],
   window: StatsWindow,
-  lastUpdated: string
+  lastUpdated: string,
+  options: ComputeStatsOptions = {}
 ): LottoStats {
+  const includeBonus = options.includeBonus !== false;
   const draws = sliceDraws(allDraws, window);
   const drawCount = draws.length;
   const latestRound = draws.length > 0 ? draws[draws.length - 1].round : 0;
@@ -45,7 +62,7 @@ export function computeStats(
   const lastSeenIndex = new Map<number, number>();
 
   draws.forEach((draw, index) => {
-    for (const num of appearances(draw)) {
+    for (const num of appearances(draw, includeBonus)) {
       freqMap.set(num, (freqMap.get(num) ?? 0) + 1);
       lastSeenIndex.set(num, index);
 
@@ -101,7 +118,7 @@ export function computeStats(
     window,
     lastUpdated,
     dataSource: "dhlottery",
-    frequencyIncludesBonus: true,
+    frequencyIncludesBonus: includeBonus,
     coOccurrenceIncludesBonus: true,
     frequencies,
     topPairs,

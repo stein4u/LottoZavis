@@ -5,10 +5,11 @@ import { LottoDraw, NumberProfile, StatsWindow } from "../types";
 interface NumberDrillPanelProps {
   number: number | null;
   window: StatsWindow;
+  includeBonus: boolean;
   onClose: () => void;
 }
 
-export default function NumberDrillPanel({ number, window, onClose }: NumberDrillPanelProps) {
+export default function NumberDrillPanel({ number, window, includeBonus, onClose }: NumberDrillPanelProps) {
   const [profile, setProfile] = useState<NumberProfile | null>(null);
   const [recentDraws, setRecentDraws] = useState<LottoDraw[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,9 +27,12 @@ export default function NumberDrillPanel({ number, window, onClose }: NumberDril
       setLoading(true);
       setError(null);
       try {
-        const windowQuery = window === "all" ? "" : `?window=${window}`;
+        const params = new URLSearchParams();
+        if (window !== "all") params.set("window", String(window));
+        if (!includeBonus) params.set("includeBonus", "false");
+        const query = params.toString();
         const [profileRes, drawsRes] = await Promise.all([
-          fetch(`/api/lotto-stats/number/${number}${windowQuery}`),
+          fetch(`/api/lotto-stats/number/${number}${query ? `?${query}` : ""}`),
           fetch(`/api/draws?contains=${number}&limit=10&offset=0`),
         ]);
 
@@ -54,7 +58,7 @@ export default function NumberDrillPanel({ number, window, onClose }: NumberDril
     };
 
     load();
-  }, [number, window]);
+  }, [number, window, includeBonus]);
 
   if (number === null) return null;
 
@@ -107,7 +111,9 @@ export default function NumberDrillPanel({ number, window, onClose }: NumberDril
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-[#070B16] rounded-lg p-3 border border-slate-800">
-                  <p className="text-[10px] text-slate-500 font-mono">출현 (보너스 포함)</p>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    출현 ({profile.frequencyIncludesBonus ? "보너스 포함" : "메인 6만"})
+                  </p>
                   <p className="text-lg font-black text-white">{profile.count}회</p>
                 </div>
                 <div className="bg-[#070B16] rounded-lg p-3 border border-slate-800">

@@ -12,10 +12,12 @@ interface PredictorTabProps {
 }
 
 const WINDOW_OPTIONS: { label: string; value: StatsWindow }[] = [
+  { label: "30회", value: 30 },
+  { label: "60회", value: 60 },
+  { label: "90회", value: 90 },
+  { label: "120회", value: 120 },
+  { label: "150회", value: 150 },
   { label: "전체", value: "all" },
-  { label: "50회", value: 50 },
-  { label: "100회", value: 100 },
-  { label: "200회", value: 200 },
 ];
 
 export default function PredictorTab({ user, onLogin, onViewAnalysis }: PredictorTabProps) {

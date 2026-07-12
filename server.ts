@@ -5,7 +5,12 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { queryDraws, enrichDraw, parseContainsNumber } from "./server/lotto/drawsApi.js";
 import { ensureLottoData, getCacheSnapshot, incrementalRefresh } from "./server/lotto/ingest.js";
-import { computeStats, parseStatsWindow } from "./server/lotto/statsEngine.js";
+import {
+  computeStats,
+  parseIncludeBonus,
+  parseStatsWindow,
+  STATS_WINDOW_ERROR,
+} from "./server/lotto/statsEngine.js";
 import { buildNumberProfile } from "./server/lotto/numberProfile.js";
 import { generatePrediction } from "./server/lotto/predictEngine.js";
 import { getWikiPage, parseWikiNav } from "./server/wiki/wikiReader.js";
@@ -49,10 +54,15 @@ async function startServer() {
 
     const window = parseStatsWindow(req.query.window);
     if (window === null) {
-      return res.status(400).json({ error: "Invalid window. Use all, 50, 100, or 200." });
+      return res.status(400).json({ error: STATS_WINDOW_ERROR });
     }
 
-    res.json(computeStats(cache.draws, window, cache.lastUpdated));
+    const includeBonus = parseIncludeBonus(req.query.includeBonus);
+    if (includeBonus === null) {
+      return res.status(400).json({ error: "Invalid includeBonus. Use true or false." });
+    }
+
+    res.json(computeStats(cache.draws, window, cache.lastUpdated, { includeBonus }));
   });
 
   app.get("/api/lotto-stats/number/:n", (req, res) => {
@@ -68,10 +78,15 @@ async function startServer() {
 
     const window = parseStatsWindow(req.query.window);
     if (window === null) {
-      return res.status(400).json({ error: "Invalid window. Use all, 50, 100, or 200." });
+      return res.status(400).json({ error: STATS_WINDOW_ERROR });
     }
 
-    res.json(buildNumberProfile(cache.draws, window, number));
+    const includeBonus = parseIncludeBonus(req.query.includeBonus);
+    if (includeBonus === null) {
+      return res.status(400).json({ error: "Invalid includeBonus. Use true or false." });
+    }
+
+    res.json(buildNumberProfile(cache.draws, window, number, includeBonus));
   });
 
   app.get("/api/draws", (req, res) => {
@@ -144,11 +159,11 @@ async function startServer() {
 
     const window = parseStatsWindow(req.body.window);
     if (window === null) {
-      return res.status(400).json({ success: false, error: "Invalid window. Use all, 50, 100, or 200." });
+      return res.status(400).json({ success: false, error: STATS_WINDOW_ERROR });
     }
 
     const { modelType, oddEvenBias, hotColdBias, excludeNumbers = [] } = req.body;
-    const stats = computeStats(cache.draws, window, cache.lastUpdated);
+    const stats = computeStats(cache.draws, window, cache.lastUpdated, { includeBonus: true });
 
     const result = generatePrediction(stats, {
       modelType: modelType ?? "random_forest",

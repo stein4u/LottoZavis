@@ -110,7 +110,12 @@ export function generatePrediction(stats: LottoStats, options: PredictOptions): 
     success: true,
     numbers,
     method: "weighted-random",
-    statsWindow: (stats.window === "all" || stats.window === 50 || stats.window === 100 || stats.window === 200
+    statsWindow: (stats.window === "all" ||
+    stats.window === 30 ||
+    stats.window === 60 ||
+    stats.window === 90 ||
+    stats.window === 120 ||
+    stats.window === 150
       ? stats.window
       : "all") as StatsWindow,
     latestRound: stats.latestRound,

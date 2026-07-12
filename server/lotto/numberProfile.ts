@@ -11,7 +11,8 @@ function zoneFor(n: number): "1-15" | "16-30" | "31-45" {
 export function buildNumberProfile(
   allDraws: LottoDraw[],
   window: StatsWindow,
-  number: number
+  number: number,
+  includeBonus = true
 ): NumberProfile {
   const draws = sliceDraws(allDraws, window);
   const drawCount = draws.length;
@@ -20,7 +21,10 @@ export function buildNumberProfile(
   let count = 0;
   let lastSeenIndex: number | undefined;
   draws.forEach((draw, index) => {
-    if (draw.numbers.includes(number) || draw.bonus === number) {
+    const hit = includeBonus
+      ? draw.numbers.includes(number) || draw.bonus === number
+      : draw.numbers.includes(number);
+    if (hit) {
       count++;
       lastSeenIndex = index;
     }
@@ -34,7 +38,7 @@ export function buildNumberProfile(
     window,
     drawCount,
     latestRound,
-    frequencyIncludesBonus: true,
+    frequencyIncludesBonus: includeBonus,
     coOccurrenceIncludesBonus: true,
     count,
     drawsSince,

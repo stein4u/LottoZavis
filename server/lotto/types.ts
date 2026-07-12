@@ -11,7 +11,7 @@ export interface LottoDrawsCache {
   draws: LottoDraw[];
 }
 
-export type StatsWindow = "all" | 50 | 100 | 200;
+export type StatsWindow = "all" | 30 | 60 | 90 | 120 | 150;
 
 export interface CoOccurrencePair {
   a: number;
@@ -31,7 +31,7 @@ export interface NumberProfile {
   window: StatsWindow | number;
   drawCount: number;
   latestRound: number;
-  frequencyIncludesBonus: true;
+  frequencyIncludesBonus: boolean;
   coOccurrenceIncludesBonus: true;
   count: number;
   drawsSince: number;
@@ -45,7 +45,7 @@ export interface LottoStats {
   window: StatsWindow | number;
   lastUpdated: string;
   dataSource: "dhlottery";
-  frequencyIncludesBonus: true;
+  frequencyIncludesBonus: boolean;
   coOccurrenceIncludesBonus: true;
   frequencies: { number: number; count: number }[];
   oddEvenRatio: { odd: number; even: number };

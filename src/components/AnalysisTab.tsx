@@ -12,10 +12,17 @@ import {
 } from "lucide-react";
 
 const WINDOW_OPTIONS: { label: string; value: StatsWindow }[] = [
+  { label: "30회", value: 30 },
+  { label: "60회", value: 60 },
+  { label: "90회", value: 90 },
+  { label: "120회", value: 120 },
+  { label: "150회", value: 150 },
   { label: "전체", value: "all" },
-  { label: "50회", value: 50 },
-  { label: "100회", value: 100 },
-  { label: "200회", value: 200 },
+];
+
+const BONUS_OPTIONS: { label: string; value: boolean }[] = [
+  { label: "보너스 포함", value: true },
+  { label: "미포함", value: false },
 ];
 
 export default function AnalysisTab() {
@@ -26,17 +33,21 @@ export default function AnalysisTab() {
   const [drawOffset, setDrawOffset] = useState(0);
   const [searchRound, setSearchRound] = useState("");
   const [windowFilter, setWindowFilter] = useState<StatsWindow>("all");
+  const [includeBonus, setIncludeBonus] = useState(true);
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [drawsLoading, setDrawsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = useCallback(async (window: StatsWindow) => {
+  const fetchStats = useCallback(async (window: StatsWindow, bonus: boolean) => {
     setLoading(true);
     setError(null);
     try {
-      const query = window === "all" ? "" : `?window=${window}`;
-      const res = await fetch(`/api/lotto-stats${query}`);
+      const params = new URLSearchParams();
+      if (window !== "all") params.set("window", String(window));
+      if (!bonus) params.set("includeBonus", "false");
+      const query = params.toString();
+      const res = await fetch(`/api/lotto-stats${query ? `?${query}` : ""}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "통계 데이터를 불러오지 못했습니다.");
@@ -83,10 +94,10 @@ export default function AnalysisTab() {
   }, []);
 
   useEffect(() => {
-    fetchStats(windowFilter);
+    fetchStats(windowFilter, includeBonus);
     fetchLatestDraw();
     fetchDraws(0);
-  }, [windowFilter, fetchStats, fetchLatestDraw, fetchDraws]);
+  }, [windowFilter, includeBonus, fetchStats, fetchLatestDraw, fetchDraws]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +127,7 @@ export default function AnalysisTab() {
         <AlertCircle className="h-10 w-10 text-rose-400" />
         <p className="text-sm text-slate-300">{error || "데이터를 불러올 수 없습니다."}</p>
         <button
-          onClick={() => fetchStats(windowFilter)}
+          onClick={() => fetchStats(windowFilter, includeBonus)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg"
         >
           <RefreshCw className="h-4 w-4" />
@@ -135,6 +146,7 @@ export default function AnalysisTab() {
     { name: "홀수 (Odd)", value: stats.oddEvenRatio.odd },
     { name: "짝수 (Even)", value: stats.oddEvenRatio.even },
   ];
+  const freqLabel = stats.frequencyIncludesBonus ? "보너스 포함" : "메인 6만 (보너스 미포함)";
   const updatedLabel = new Date(stats.lastUpdated).toLocaleString("ko-KR");
 
   return (
@@ -179,22 +191,39 @@ export default function AnalysisTab() {
           </div>
         </div>
 
-        {/* Window filter + export */}
-        <div className="flex flex-wrap items-center gap-2 justify-between">
-          <div className="flex flex-wrap gap-2">
-            {WINDOW_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setWindowFilter(opt.value)}
-                className={`px-3 py-1.5 rounded text-xs font-mono border transition-colors ${
-                  windowFilter === opt.value
-                    ? "bg-blue-600 border-blue-500 text-white"
-                    : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+        {/* Window filter + bonus toggle + export */}
+        <div className="flex flex-wrap items-center gap-3 justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap gap-2">
+              {WINDOW_OPTIONS.map((opt) => (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => setWindowFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded text-xs font-mono border transition-colors ${
+                    windowFilter === opt.value
+                      ? "bg-blue-600 border-blue-500 text-white"
+                      : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2 border-l border-slate-700 pl-3">
+              {BONUS_OPTIONS.map((opt) => (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => setIncludeBonus(opt.value)}
+                  className={`px-3 py-1.5 rounded text-xs font-mono border transition-colors ${
+                    includeBonus === opt.value
+                      ? "bg-slate-600 border-slate-500 text-white"
+                      : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
           <button
             type="button"
@@ -240,7 +269,7 @@ export default function AnalysisTab() {
               <BarChart2 className="h-5 w-5 text-blue-400" />
               <h3 className="font-bold text-white text-base">45개 번호 누적 출현 빈도</h3>
             </div>
-            <span className="text-[10px] font-mono text-slate-500">보너스 포함</span>
+            <span className="text-[10px] font-mono text-slate-500">{freqLabel}</span>
           </div>
 
           <div className="h-80 w-full">
@@ -252,7 +281,7 @@ export default function AnalysisTab() {
                 <Tooltip
                   contentStyle={{ backgroundColor: "#070B16", borderRadius: "8px", border: "1px solid #1e293b", color: "#fff", fontSize: "11px", fontFamily: "monospace" }}
                   labelFormatter={(value) => `번호: ${value}번`}
-                  formatter={(value: number | undefined) => [`${value ?? 0}회 출현`, "누적 빈도 (보너스 포함)"]}
+                  formatter={(value: number | undefined) => [`${value ?? 0}회 출현`, `누적 빈도 (${freqLabel})`]}
                 />
                 <Bar
                   dataKey="count"
@@ -311,7 +340,7 @@ export default function AnalysisTab() {
       {/* Insight cards + sum */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="bg-[#0D1426] rounded-xl p-6 border border-slate-800 shadow-xl space-y-3">
-          <h3 className="font-bold text-white text-sm">미출현 TOP 6 (보너스 포함)</h3>
+          <h3 className="font-bold text-white text-sm">미출현 TOP 6 ({freqLabel})</h3>
           <div className="space-y-2">
             {topAbsence.map(({ number, drawsSince }) => (
               <button
@@ -328,7 +357,7 @@ export default function AnalysisTab() {
         </div>
 
         <div className="bg-[#0D1426] rounded-xl p-6 border border-slate-800 shadow-xl space-y-3">
-          <h3 className="font-bold text-white text-sm">구간별 출현 (보너스 포함)</h3>
+          <h3 className="font-bold text-white text-sm">구간별 출현 ({freqLabel})</h3>
           {stats.zoneStats.map((z) => (
             <div key={z.zone} className="space-y-1">
               <div className="flex justify-between text-xs font-mono">
@@ -521,6 +550,7 @@ export default function AnalysisTab() {
       <NumberDrillPanel
         number={selectedNumber}
         window={windowFilter}
+        includeBonus={includeBonus}
         onClose={() => setSelectedNumber(null)}
       />
     </div>

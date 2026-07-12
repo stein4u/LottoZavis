@@ -8,7 +8,7 @@ export enum TabId {
 
 export type ModelType = "random_forest" | "xgboost" | "lstm";
 
-export type StatsWindow = "all" | 50 | 100 | 200;
+export type StatsWindow = "all" | 30 | 60 | 90 | 120 | 150;
 
 export interface CoOccurrencePair {
   a: number;
