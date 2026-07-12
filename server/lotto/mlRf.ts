@@ -69,7 +69,7 @@ function pythonArgs(script: string, extra: string[] = []): { cmd: string; args: 
   return { cmd, args: [script, ...extra] };
 }
 
-function runPythonScript(script: string, timeoutMs = 600_000): Promise<{ code: number; stdout: string; stderr: string }> {
+export function runPythonScript(script: string, timeoutMs = 600_000): Promise<{ code: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const resolved = pythonArgs(script);
     if (!resolved) {

@@ -9,6 +9,10 @@ coverage/
 
 # Cached Random Forest model binaries (regenerate via refresh / ml/train_rf.py)
 data/ml/*.joblib
+# Cached LSTM Keras models (regenerate via npm run train:lstm)
+data/ml/lstm_model.keras
+data/ml/lstm_model.h5
+data/ml/lstm_model/
 
 
 # llm-wiki-lotto: wiki + AGENTS.md only (see llm-wiki-lotto/wiki/POLICY.md)

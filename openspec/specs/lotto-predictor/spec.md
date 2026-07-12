@@ -1,7 +1,7 @@
 # lotto-predictor Specification
 
 ## Purpose
-Statistical weighted-random recommendations from real 동행복권 draw statistics, coexisting with an optional cached Random Forest ML experiment path in the Predictor tab.
+Statistical weighted-random recommendations from real 동행복권 draw statistics, coexisting with cached Random Forest and LSTM ML experiment paths in the Predictor tab.
 
 ## Requirements
 ### Requirement: Predict endpoint uses real draw statistics
@@ -58,7 +58,7 @@ Model type selection (`mid_range`, `freq_tilt`, `absence_tilt`) SHALL apply dist
 
 ### Requirement: Predictor tab honest UX
 
-The Predictor tab SHALL present the default statistical path as a weighted recommendation based on real 동행복권 data. Statistical results SHALL NOT display precision, recall, F1, or percentage confidence scores. When the separate Random Forest ML mode is selected, the UI MAY display real training metrics (R², hit-count) from the ML status API with an explicit experimental disclaimer, and SHALL NOT conflate those metrics with the statistical path.
+The Predictor tab SHALL present the default statistical path as a weighted recommendation based on real 동행복권 data. Statistical results SHALL NOT display precision, recall, F1, or percentage confidence scores. When Random Forest or LSTM ML modes are selected, the UI MAY display real training metrics from the corresponding ML status APIs with an explicit experimental disclaimer, and SHALL NOT conflate those metrics with the statistical path.
 
 #### Scenario: No fabricated accuracy on statistical results
 
@@ -80,10 +80,15 @@ The Predictor tab SHALL present the default statistical path as a weighted recom
 - **WHEN** the statistical predict API request fails
 - **THEN** the UI shows an error with retry and does not generate a random fallback result with fabricated metrics
 
-#### Scenario: ML mode shows real metrics only
+#### Scenario: RF mode shows real metrics only
 
 - **WHEN** a user views the Random Forest ML subsection with an available model
 - **THEN** displayed R² and hit-count values come from `GET /api/ml/rf/status` (or the predict response snapshot), not invented client-side scores
+
+#### Scenario: LSTM mode shows real metrics only
+
+- **WHEN** a user views the LSTM ML subsection with an available model
+- **THEN** displayed hit-count, val-loss/overfit, and prize/rank metrics come from `GET /api/ml/lstm/status` (or the predict response snapshot), not invented client-side scores
 
 ### Requirement: Site disclaimers updated after alignment
 
@@ -96,7 +101,7 @@ Analysis tab and/or footer disclaimers SHALL state that Predictor uses the same 
 
 ### Requirement: Saved predictions include stats context
 
-When a logged-in user saves a recommendation to Firestore, the system SHALL store metadata identifying the generation method (`weighted-random` or `random-forest-ml`). Statistical saves SHALL include `statsWindow` and `latestRound` at generation time. ML saves SHALL include `latestRound` and MAY include metric snapshot fields (`r2`, `hitMean`) without using a fabricated `confidence` percentage.
+When a logged-in user saves a recommendation to Firestore, the system SHALL store metadata identifying the generation method (`weighted-random`, `random-forest-ml`, or `lstm-ml`). Statistical saves SHALL include `statsWindow` and `latestRound` at generation time. ML saves (RF or LSTM) SHALL include `latestRound` and MAY include method-specific metric snapshot fields without using a fabricated `confidence` percentage.
 
 #### Scenario: Save includes stats metadata
 
@@ -108,11 +113,16 @@ When a logged-in user saves a recommendation to Firestore, the system SHALL stor
 - **WHEN** a user saves a Random Forest ML recommendation
 - **THEN** the stored record includes `latestRound` and method metadata for `random-forest-ml`
 
+#### Scenario: Save includes LSTM method metadata
+
+- **WHEN** a user saves an LSTM ML recommendation
+- **THEN** the stored record includes `latestRound` and method metadata for `lstm-ml`
+
 ### Requirement: Predictor offers statistical and ML modes
 
-The Predictor tab SHALL allow the user to choose between statistical weighted-random recommendation (`POST /api/predict`) and cached Random Forest ML recommendation (`POST /api/ml/rf/predict`) without presenting weight profiles as trained Random Forest / XGBoost / LSTM models.
+The Predictor tab SHALL allow the user to choose among statistical weighted-random recommendation (`POST /api/predict`), cached Random Forest ML (`POST /api/ml/rf/predict`), and cached LSTM ML (`POST /api/ml/lstm/predict`) without presenting statistical weight profiles as trained Random Forest / XGBoost / LSTM models.
 
-#### Scenario: Mode toggle visible
+#### Scenario: Three mode choices visible
 
 - **WHEN** a user opens the Predictor tab
-- **THEN** the UI exposes a clear choice between the statistical path and the Random Forest ML path
+- **THEN** the UI exposes a clear choice among the statistical path, the Random Forest ML path, and the LSTM ML path

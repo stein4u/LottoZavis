@@ -67,7 +67,7 @@ export interface SavedPrediction {
   numbers: number[];
   confidence?: number;
   modelType: string;
-  method?: "weighted-random" | "random-forest-ml";
+  method?: "weighted-random" | "random-forest-ml" | "lstm-ml";
   createdAt: any;
   oddEvenRatio?: string;
   sum?: number;
@@ -75,6 +75,8 @@ export interface SavedPrediction {
   latestRound?: number;
   r2?: number;
   hitMean?: number;
+  bestValLoss?: number;
+  prizeMean?: number;
 }
 
 export interface WikiComment {
@@ -137,6 +139,8 @@ export const fetchPredictionsHistory = async (userId: string): Promise<SavedPred
         latestRound: data.latestRound,
         r2: data.r2,
         hitMean: data.hitMean,
+        bestValLoss: data.bestValLoss,
+        prizeMean: data.prizeMean,
       });
     });
     return history;

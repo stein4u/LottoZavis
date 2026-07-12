@@ -44,8 +44,9 @@ export default function HowToTab() {
               </div>
               <h4 className="font-bold text-sm text-white">추천 방식 선택</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                <b>통계 가중 추천</b>에서는 빈도 균형형 / 고빈도 선호형 / 미출현 선호형 프로필과 홀짝·핫콜드 필터를 고른 뒤 조합을 생성합니다.
-                <b>랜덤포레스트 ML</b> 모드에서는 캐시된 학습 모델로 실험용 후보를 생성합니다 (당첨 보장 없음).
+                <b>통계 가중</b>, <b>랜덤포레스트 ML</b>, <b>LSTM ML</b> 세 모드 중 하나를 고릅니다.
+                LSTM은 `pip install -r ml/requirements-lstm.txt` 후 `npm run train:lstm`으로 캐시를 만든 뒤 사용합니다
+                (당첨 보장 없음 · 독립 시행 실험).
               </p>
             </div>
           </div>
@@ -59,8 +60,8 @@ export default function HowToTab() {
               </div>
               <h4 className="font-bold text-sm text-white">결과 확인 및 Firestore 저장</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                통계 경로는 방식·구간·회차 메타데이터를, ML 경로는 R²·hit-count 스냅샷을 함께 표시합니다.
-                마음에 드는 세트를 Firestore 보관함에 저장해 이후 회차와 비교할 수 있습니다.
+                통계는 방식·구간·회차, RF는 R²·hit, LSTM은 hit·val loss·상금 시뮬레이션을 함께 표시합니다.
+                저장 시 method가 weighted-random / random-forest-ml / lstm-ml 로 구분됩니다.
               </p>
             </div>
           </div>

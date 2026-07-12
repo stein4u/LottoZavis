@@ -10,7 +10,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "seed:lotto": "tsx scripts/seed-lotto.ts",
-    "refresh:lotto": "tsx scripts/refresh-lotto.ts"
+    "refresh:lotto": "tsx scripts/refresh-lotto.ts",
+    "train:lstm": "tsx scripts/train-lstm.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

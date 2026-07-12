@@ -1,0 +1,75 @@
+{
+  "hitMean": 0.8206521739130435,
+  "hitStd": 0.7976920572172247,
+  "hitHist": [
+    75,
+    70,
+    36,
+    3,
+    0,
+    0,
+    0
+  ],
+  "bestValLoss": 0.3933064937591553,
+  "finalValLoss": 0.39436277747154236,
+  "valLossCurve": [
+    0.39957481622695923,
+    0.39395034313201904,
+    0.3941069543361664,
+    0.3934301435947418,
+    0.3934546709060669,
+    0.3933064937591553,
+    0.3937564194202423,
+    0.39376673102378845,
+    0.393919974565506,
+    0.39407652616500854,
+    0.39436277747154236
+  ],
+  "trainLossCurve": [
+    0.5235521197319031,
+    0.3949487507343292,
+    0.3931567370891571,
+    0.3926767408847809,
+    0.3925803005695343,
+    0.3920319676399231,
+    0.3922370374202728,
+    0.39145663380622864,
+    0.3908543586730957,
+    0.3906315267086029,
+    0.390106737613678
+  ],
+  "overfitNote": "val_loss_stable_or_improved",
+  "prizeMean": 81.52173913043478,
+  "rankHist": [
+    0,
+    0,
+    0,
+    0,
+    3,
+    181
+  ],
+  "prizeAssumptions": {
+    "currency": "KRW",
+    "source": "static means inspired by tykimos deep-lotto article; not live \ub3d9\ud589\ubcf5\uad8c payouts",
+    "meanPrizeByRank": [
+      2434854568.0,
+      57192272.0,
+      1451891.0,
+      53061.0,
+      5000.0
+    ],
+    "ticketCostAssumed": 1000
+  },
+  "trainedAt": "2026-07-12T12:24:42.257233+00:00",
+  "latestRound": 1231,
+  "sampleCount": 1221,
+  "trainCount": 854,
+  "valCount": 183,
+  "testCount": 184,
+  "bonusIncluded": false,
+  "windowK": 10,
+  "lstmUnits": 128,
+  "epochsRequested": 40,
+  "epochsRan": 11,
+  "modelPath": "data/ml/lstm_model.keras"
+}

@@ -25,6 +25,24 @@ interface RfStatusResponse {
   metricsExists: boolean;
 }
 
+interface LstmStatusResponse {
+  available: boolean;
+  metrics: {
+    hitMean: number;
+    hitStd: number;
+    hitHist: number[];
+    bestValLoss: number;
+    finalValLoss: number;
+    overfitNote: string;
+    prizeMean: number;
+    rankHist: number[];
+    trainedAt: string;
+    latestRound: number;
+  } | null;
+  modelExists: boolean;
+  metricsExists: boolean;
+}
+
 const WINDOW_OPTIONS: { label: string; value: StatsWindow }[] = [
   { label: "30회", value: 30 },
   { label: "60회", value: 60 },
@@ -41,8 +59,10 @@ const PROFILE_LABEL: Record<ModelType, string> = {
 };
 
 function methodLabel(item: SavedPrediction): string {
+  if (item.method === "lstm-ml") return "LSTM ML";
   if (item.method === "random-forest-ml") return "랜덤포레스트 ML";
   if (item.method === "weighted-random") return "통계 가중";
+  if (item.modelType === "LSTM ML" || item.modelType === "lstm-ml") return "LSTM ML";
   if (item.modelType === "random_forest_ml" || item.modelType === "랜덤포레스트 ML") return "랜덤포레스트 ML";
   return "통계 가중";
 }
@@ -62,6 +82,8 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
 
   const [rfStatus, setRfStatus] = useState<RfStatusResponse | null>(null);
   const [rfStatusLoading, setRfStatusLoading] = useState(false);
+  const [lstmStatus, setLstmStatus] = useState<LstmStatusResponse | null>(null);
+  const [lstmStatusLoading, setLstmStatusLoading] = useState(false);
 
   const [history, setHistory] = useState<SavedPrediction[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -75,14 +97,21 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
     "통계 기반 번호 조합 생성 완료!",
   ];
 
-  const mlSteps = [
+  const rfSteps = [
     "캐시된 Random Forest 모델 상태 확인 중...",
     "회차 단위 피처로 번호별 출현 점수 계산 중...",
     "상위 6개 번호 선정 중...",
     "실험용 ML 후보 조합 생성 완료!",
   ];
 
-  const steps = mode === "stats" ? statsSteps : mlSteps;
+  const lstmSteps = [
+    "캐시된 LSTM 모델 상태 확인 중...",
+    "최근 K회 multi-hot 시퀀스 인코딩 중...",
+    "sigmoid 점수로 상위 6개 선정 중...",
+    "실험용 LSTM 후보 조합 생성 완료!",
+  ];
+
+  const steps = mode === "stats" ? statsSteps : mode === "ml-rf" ? rfSteps : lstmSteps;
 
   useEffect(() => {
     if (user) {
@@ -95,6 +124,8 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
   useEffect(() => {
     if (mode === "ml-rf") {
       loadRfStatus();
+    } else if (mode === "ml-lstm") {
+      loadLstmStatus();
     }
   }, [mode]);
 
@@ -109,6 +140,20 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
       setRfStatus({ available: false, metrics: null, modelExists: false, metricsExists: false });
     } finally {
       setRfStatusLoading(false);
+    }
+  };
+
+  const loadLstmStatus = async () => {
+    setLstmStatusLoading(true);
+    try {
+      const res = await fetch("/api/ml/lstm/status");
+      const data = await res.json();
+      setLstmStatus(data);
+    } catch (err) {
+      console.error(err);
+      setLstmStatus({ available: false, metrics: null, modelExists: false, metricsExists: false });
+    } finally {
+      setLstmStatusLoading(false);
     }
   };
 
@@ -181,7 +226,7 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
           frequencyIncludesBonus: data.frequencyIncludesBonus,
           timestamp: data.timestamp,
         });
-      } else {
+      } else if (mode === "ml-rf") {
         const response = await fetch("/api/ml/rf/predict", { method: "POST" });
         const data = await response.json();
         if (!response.ok || !data.success) {
@@ -200,6 +245,29 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
           bonusIncluded: false,
         });
         await loadRfStatus();
+      } else {
+        const response = await fetch("/api/ml/lstm/predict", { method: "POST" });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "LSTM 예측에 실패했습니다. npm run train:lstm 을 확인하세요.");
+        }
+        setResult({
+          numbers: data.numbers,
+          method: "lstm-ml",
+          latestRound: data.latestRound,
+          timestamp: data.timestamp,
+          trainedAt: data.trainedAt,
+          hitMean: data.hitMean,
+          hitStd: data.hitStd,
+          hitHist: data.hitHist,
+          bestValLoss: data.bestValLoss,
+          finalValLoss: data.finalValLoss,
+          overfitNote: data.overfitNote,
+          prizeMean: data.prizeMean,
+          rankHist: data.rankHist,
+          bonusIncluded: false,
+        });
+        await loadLstmStatus();
       }
       confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
     } catch (err: any) {
@@ -227,6 +295,19 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
           latestRound: result.latestRound,
           r2: result.r2,
           hitMean: result.hitMean,
+        });
+      } else if (result.method === "lstm-ml") {
+        await savePrediction({
+          userId: user.uid,
+          numbers: result.numbers,
+          modelType: "LSTM ML",
+          method: "lstm-ml",
+          oddEvenRatio,
+          sum,
+          latestRound: result.latestRound,
+          hitMean: result.hitMean,
+          bestValLoss: result.bestValLoss,
+          prizeMean: result.prizeMean,
         });
       } else {
         await savePrediction({
@@ -311,6 +392,16 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
           >
             랜덤포레스트 ML
           </button>
+          <button
+            onClick={() => handleModeChange("ml-lstm")}
+            className={`px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
+              mode === "ml-lstm"
+                ? "bg-blue-600 border-blue-500 text-white"
+                : "bg-[#0D1426] border-slate-800 text-slate-400 hover:border-slate-600"
+            }`}
+          >
+            LSTM ML
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -319,15 +410,85 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
               <Brain className="h-6 w-6 text-blue-400" />
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  {mode === "stats" ? "통계 가중치 및 필터 설정" : "랜덤포레스트 실험 (캐시 모델)"}
+                  {mode === "stats"
+                    ? "통계 가중치 및 필터 설정"
+                    : mode === "ml-rf"
+                      ? "랜덤포레스트 실험 (캐시 모델)"
+                      : "LSTM 실험 (수동 학습 캐시)"}
                 </h2>
                 <p className="text-xs text-slate-400">
                   {mode === "stats"
                     ? "Analysis와 동일한 실데이터 빈도에 편향 필터를 적용합니다."
-                    : "ingest/refresh 시 학습된 모델을 사용합니다. 보너스 미포함 · 전체 회차."}
+                    : mode === "ml-rf"
+                      ? "ingest/refresh 시 학습된 모델을 사용합니다. 보너스 미포함 · 전체 회차."
+                      : "npm run train:lstm 으로 학습한 캐시만 사용합니다. K=10 시퀀스 · 보너스 미포함."}
                 </p>
               </div>
             </div>
+
+            {mode === "ml-lstm" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-bold text-slate-200">LSTM 모델 캐시 상태</label>
+                  <button
+                    onClick={loadLstmStatus}
+                    disabled={lstmStatusLoading}
+                    className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${lstmStatusLoading ? "animate-spin" : ""}`} />
+                    새로고침
+                  </button>
+                </div>
+                {lstmStatusLoading && !lstmStatus ? (
+                  <div className="h-24 bg-slate-800/40 animate-pulse rounded-xl" />
+                ) : lstmStatus?.available && lstmStatus.metrics ? (
+                  <div className="bg-[#070B16] border border-slate-800 rounded-xl p-4 space-y-2 text-xs font-mono">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">가용</span>
+                      <span className="text-emerald-400">available</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">학습 기준 회차</span>
+                      <span className="text-white">{lstmStatus.metrics.latestRound}회</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">avg hit ( /6 )</span>
+                      <span className="text-white">
+                        {lstmStatus.metrics.hitMean.toFixed(3)} ± {lstmStatus.metrics.hitStd.toFixed(3)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">best / final val loss</span>
+                      <span className="text-white">
+                        {lstmStatus.metrics.bestValLoss.toFixed(4)} / {lstmStatus.metrics.finalValLoss.toFixed(4)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-400 shrink-0">overfit</span>
+                      <span className="text-amber-200 text-right">{lstmStatus.metrics.overfitNote}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">prizeMean (sim)</span>
+                      <span className="text-white">{Math.round(lstmStatus.metrics.prizeMean).toLocaleString()}원</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 pt-1">
+                      hitHist: [{lstmStatus.metrics.hitHist.join(", ")}] · rankHist: [
+                      {lstmStatus.metrics.rankHist.join(", ")}]
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-xs text-amber-100 space-y-2">
+                    <p>
+                      LSTM 캐시가 없습니다. `pip install -r ml/requirements-lstm.txt` 후 `npm run train:lstm` 을
+                      실행하세요.
+                    </p>
+                  </div>
+                )}
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  ※ 로또는 독립 시행입니다. hit / val loss / 상금 시뮬레이션은 실험 지표이며 당첨 확률과 무관합니다.
+                </p>
+              </div>
+            )}
 
             {mode === "ml-rf" && (
               <div className="space-y-4">
@@ -512,20 +673,31 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
             <div className="pt-2">
               <button
                 onClick={handlePredict}
-                disabled={isPredicting || (mode === "ml-rf" && rfStatus !== null && !rfStatus.available)}
+                disabled={
+                  isPredicting ||
+                  (mode === "ml-rf" && rfStatus !== null && !rfStatus.available) ||
+                  (mode === "ml-lstm" && lstmStatus !== null && !lstmStatus.available)
+                }
                 className="w-full py-4.5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-base shadow-lg shadow-blue-500/10 flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50"
               >
                 {isPredicting ? (
                   <>
                     <RefreshCw className="h-5 w-5 animate-spin" />
                     <span>
-                      {mode === "stats" ? "통계 기반" : "ML"} 번호 조합 생성 중... ({predictionStep + 1}/{steps.length})
+                      {mode === "stats" ? "통계 기반" : mode === "ml-rf" ? "RF ML" : "LSTM"} 번호 조합 생성 중... (
+                      {predictionStep + 1}/{steps.length})
                     </span>
                   </>
                 ) : (
                   <>
                     <Cpu className="h-5 w-5" />
-                    <span>{mode === "stats" ? "통계 기반 번호 조합 생성하기" : "캐시 모델로 ML 후보 생성하기"}</span>
+                    <span>
+                      {mode === "stats"
+                        ? "통계 기반 번호 조합 생성하기"
+                        : mode === "ml-rf"
+                          ? "캐시 모델로 ML 후보 생성하기"
+                          : "LSTM 캐시로 후보 생성하기"}
+                    </span>
                   </>
                 )}
               </button>
@@ -589,10 +761,18 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
                 <div className="space-y-6" id="prediction-result-panel">
                   <div className="text-center space-y-1">
                     <span className="text-xs text-blue-400 font-mono font-bold tracking-wider">
-                      {result.method === "random-forest-ml" ? "RANDOM-FOREST-ML" : "WEIGHTED-RANDOM"}
+                      {result.method === "lstm-ml"
+                        ? "LSTM-ML"
+                        : result.method === "random-forest-ml"
+                          ? "RANDOM-FOREST-ML"
+                          : "WEIGHTED-RANDOM"}
                     </span>
                     <h3 className="text-xl font-extrabold text-white">
-                      {result.method === "random-forest-ml" ? "ML 실험 후보 조합" : "통계 기반 추천 조합"}
+                      {result.method === "lstm-ml"
+                        ? "LSTM 실험 후보 조합"
+                        : result.method === "random-forest-ml"
+                          ? "ML 실험 후보 조합"
+                          : "통계 기반 추천 조합"}
                     </h3>
                   </div>
 
@@ -638,6 +818,26 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
                         </div>
                       </>
                     )}
+                    {result.method === "lstm-ml" && (
+                      <>
+                        <div className="flex justify-between border-b border-slate-800 py-2">
+                          <span className="text-slate-400">hitMean</span>
+                          <span className="text-white">{result.hitMean != null ? result.hitMean.toFixed(3) : "-"}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-800 py-2">
+                          <span className="text-slate-400">val loss</span>
+                          <span className="text-white">
+                            {result.bestValLoss != null ? result.bestValLoss.toFixed(4) : "-"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-800 py-2">
+                          <span className="text-slate-400">prizeMean</span>
+                          <span className="text-white">
+                            {result.prizeMean != null ? `${Math.round(result.prizeMean).toLocaleString()}원` : "-"}
+                          </span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex justify-between pt-2">
                       <span className="text-slate-400">합계 / 홀짝</span>
                       <span className="text-white">
@@ -651,6 +851,11 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
                     )}
                     {result.method === "random-forest-ml" && (
                       <p className="text-[10px] text-slate-500 pt-1">ML 피처/타깃: 보너스 미포함 · 실험용 지표</p>
+                    )}
+                    {result.method === "lstm-ml" && (
+                      <p className="text-[10px] text-slate-500 pt-1">
+                        LSTM K=10 · 보너스 미포함 · {result.overfitNote || "실험용 지표"}
+                      </p>
                     )}
                   </div>
 
@@ -695,7 +900,11 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
             </div>
 
             <div className="mt-8 text-[10px] text-slate-500 text-center relative z-10 font-mono">
-              {mode === "stats" ? "Statistical recommendation · same data as Analysis tab" : "Experimental RF · not a win-probability claim"}
+              {mode === "stats"
+                ? "Statistical recommendation · same data as Analysis tab"
+                : mode === "ml-rf"
+                  ? "Experimental RF · not a win-probability claim"
+                  : "Experimental LSTM · independent trials · manual train:lstm"}
             </div>
           </div>
         </div>
@@ -761,9 +970,11 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
                       <td className="py-3.5 px-4">
                         <span
                           className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono border ${
-                            methodLabel(item) === "랜덤포레스트 ML"
-                              ? "bg-violet-500/10 text-violet-300 border-violet-500/20"
-                              : "bg-slate-500/10 text-slate-300 border-slate-500/20"
+                            methodLabel(item) === "LSTM ML"
+                              ? "bg-cyan-500/10 text-cyan-300 border-cyan-500/20"
+                              : methodLabel(item) === "랜덤포레스트 ML"
+                                ? "bg-violet-500/10 text-violet-300 border-violet-500/20"
+                                : "bg-slate-500/10 text-slate-300 border-slate-500/20"
                           }`}
                         >
                           {methodLabel(item)}
@@ -773,6 +984,9 @@ export default function PredictorTab({ user, onLogin, onViewAnalysis }: Predicto
                         <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded text-[10px] font-bold font-mono">
                           {item.modelType}
                           {item.method === "random-forest-ml" && item.hitMean != null
+                            ? ` · hit ${item.hitMean.toFixed(2)}`
+                            : ""}
+                          {item.method === "lstm-ml" && item.hitMean != null
                             ? ` · hit ${item.hitMean.toFixed(2)}`
                             : ""}
                         </span>

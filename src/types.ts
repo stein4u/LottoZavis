@@ -8,9 +8,9 @@ export enum TabId {
 
 export type ModelType = "mid_range" | "freq_tilt" | "absence_tilt";
 
-export type PredictorMode = "stats" | "ml-rf";
+export type PredictorMode = "stats" | "ml-rf" | "ml-lstm";
 
-export type PredictionMethod = "weighted-random" | "random-forest-ml";
+export type PredictionMethod = "weighted-random" | "random-forest-ml" | "lstm-ml";
 
 export type StatsWindow = "all" | 30 | 60 | 90 | 120 | 150;
 
@@ -52,6 +52,11 @@ export interface PredictionResult {
   hitMean?: number;
   hitStd?: number;
   hitHist?: number[];
+  bestValLoss?: number;
+  finalValLoss?: number;
+  overfitNote?: string;
+  prizeMean?: number;
+  rankHist?: number[];
   bonusIncluded?: boolean;
 }
 

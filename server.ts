@@ -14,6 +14,7 @@ import {
 import { buildNumberProfile } from "./server/lotto/numberProfile.js";
 import { generatePrediction, parseModelType } from "./server/lotto/predictEngine.js";
 import { getRfStatus, runRfPredict } from "./server/lotto/mlRf.js";
+import { getLstmStatus, runLstmPredict } from "./server/lotto/mlLstm.js";
 import { getWikiPage, parseWikiNav } from "./server/wiki/wikiReader.js";
 import {
   buildWikiAskPrompt,
@@ -138,6 +139,18 @@ async function startServer() {
 
   app.post("/api/ml/rf/predict", async (_req, res) => {
     const result = await runRfPredict();
+    if (!result.success) {
+      return res.status(503).json(result);
+    }
+    res.json(result);
+  });
+
+  app.get("/api/ml/lstm/status", (_req, res) => {
+    res.json(getLstmStatus());
+  });
+
+  app.post("/api/ml/lstm/predict", async (_req, res) => {
+    const result = await runLstmPredict();
     if (!result.success) {
       return res.status(503).json(result);
     }
