@@ -16,3 +16,6 @@ llm-wiki-lotto/raw/
 llm-wiki-lotto/scripts/
 llm-wiki-lotto/.cursor/
 llm-wiki-lotto/.obsidian/
+
+__pycache__/
+*.pyc
