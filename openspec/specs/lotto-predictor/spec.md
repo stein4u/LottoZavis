@@ -5,7 +5,7 @@ TBD - created by archiving change predictor-real-stats. Update Purpose after arc
 ## Requirements
 ### Requirement: Predict endpoint uses real draw statistics
 
-The system SHALL generate recommended lotto numbers via `POST /api/predict` using weights derived from cached draw data and `statsEngine` frequencies, not hardcoded hot/cold lists.
+The system SHALL generate recommended lotto numbers via `POST /api/predict` using weights derived from cached draw data and `statsEngine` frequencies, not hardcoded hot/cold lists. Prediction weights SHALL always use bonus-inclusive frequencies.
 
 #### Scenario: Hot bias uses top frequency numbers
 
@@ -19,8 +19,8 @@ The system SHALL generate recommended lotto numbers via `POST /api/predict` usin
 
 #### Scenario: Window parameter affects weights
 
-- **WHEN** a client requests prediction with `window: 100`
-- **THEN** hot/cold weights are computed from the same 100-draw window used by `GET /api/lotto-stats?window=100`
+- **WHEN** a client requests prediction with `window: 90`
+- **THEN** hot/cold weights are computed from the same 90-draw window used by `GET /api/lotto-stats?window=90` under bonus-inclusive frequency
 
 #### Scenario: Empty cache
 
@@ -62,7 +62,7 @@ The Predictor tab SHALL present the feature as a statistical weighted recommenda
 #### Scenario: Stats window selector
 
 - **WHEN** a user generates a recommendation
-- **THEN** the user can choose the same stats window options as Analysis (전체 / 50 / 100 / 200) and the selection is sent to the predict API
+- **THEN** the user can choose the same stats window options as Analysis (전체 / 30 / 60 / 90 / 120 / 150) and the selection is sent to the predict API
 
 #### Scenario: Loading copy reflects statistics not ML training
 
