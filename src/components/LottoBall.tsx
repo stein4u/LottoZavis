@@ -45,6 +45,8 @@ interface LottoBallProps {
   number: number;
   count?: number;
   size?: number;
+  /** When false, renders a non-interactive span (display-only). Default true when onClick is set. */
+  interactive?: boolean;
   onClick?: (number: number) => void;
   className?: string;
 }
@@ -53,29 +55,17 @@ export default function LottoBall({
   number,
   count,
   size = 26,
+  interactive,
   onClick,
   className = "",
 }: LottoBallProps) {
   const decade = lottoBallDecade(number);
   const style = DECADE_STYLES[decade];
   const title = count !== undefined ? `${number}번 · ${count}회` : `${number}번`;
+  const isInteractive = interactive ?? Boolean(onClick);
 
-  return (
-    <button
-      type="button"
-      title={title}
-      aria-label={title}
-      onClick={() => onClick?.(number)}
-      className={`relative shrink-0 rounded-full font-black flex items-center justify-center transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 cursor-pointer ${className}`}
-      style={{
-        width: size,
-        height: size,
-        fontSize: size * 0.38,
-        background: style.bg,
-        color: style.text,
-        boxShadow: style.shadow,
-      }}
-    >
+  const visual = (
+    <>
       <span
         className="pointer-events-none absolute rounded-full opacity-70"
         style={{
@@ -87,6 +77,41 @@ export default function LottoBall({
         }}
       />
       <span className="relative z-10 leading-none">{number}</span>
+    </>
+  );
+
+  const sharedStyle: React.CSSProperties = {
+    width: size,
+    height: size,
+    fontSize: size * 0.38,
+    background: style.bg,
+    color: style.text,
+    boxShadow: style.shadow,
+  };
+
+  if (!isInteractive) {
+    return (
+      <span
+        title={title}
+        aria-label={title}
+        className={`relative shrink-0 rounded-full font-black inline-flex items-center justify-center ${className}`}
+        style={sharedStyle}
+      >
+        {visual}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={() => onClick?.(number)}
+      className={`relative shrink-0 rounded-full font-black flex items-center justify-center transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 cursor-pointer ${className}`}
+      style={sharedStyle}
+    >
+      {visual}
     </button>
   );
 }

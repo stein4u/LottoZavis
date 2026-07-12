@@ -13,6 +13,8 @@ import {
   RefreshCw, AlertCircle, Search, Clock, Database, Download, Link2
 } from "lucide-react";
 
+const DRAWS_PAGE_SIZE = 30;
+
 const WINDOW_OPTIONS: { label: string; value: StatsWindow }[] = [
   { label: "30회", value: 30 },
   { label: "60회", value: 60 },
@@ -75,7 +77,10 @@ export default function AnalysisTab() {
   const fetchDraws = useCallback(async (offset: number, round?: number, append = false) => {
     setDrawsLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "20", offset: String(offset) });
+      const params = new URLSearchParams({
+        limit: String(DRAWS_PAGE_SIZE),
+        offset: String(offset),
+      });
       if (round !== undefined) {
         params.set("from", String(round));
         params.set("to", String(round));
@@ -251,16 +256,12 @@ export default function AnalysisTab() {
           <div className="flex flex-wrap items-center gap-4">
             <span className="text-sm font-bold text-white">{latestDraw.round}회</span>
             <span className="text-xs text-slate-400">{latestDraw.date}</span>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 items-center">
               {latestDraw.numbers.map((n) => (
-                <span key={n} className="h-8 w-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
-                  {n}
-                </span>
+                <LottoBall key={n} number={n} size={30} interactive={false} />
               ))}
-              <span className="text-slate-500 self-center">+</span>
-              <span className="h-8 w-8 rounded-full bg-rose-500/80 text-white text-xs font-bold flex items-center justify-center">
-                {latestDraw.bonus}
-              </span>
+              <span className="text-slate-500 self-center px-0.5">+</span>
+              <LottoBall number={latestDraw.bonus} size={28} interactive={false} />
             </div>
             <span className="text-xs text-slate-400 font-mono">
               합 {latestDraw.sum} · 홀{latestDraw.oddCount} 짝{6 - (latestDraw.oddCount ?? 0)}
@@ -578,8 +579,16 @@ export default function AnalysisTab() {
                 <tr key={d.round} className="border-b border-slate-800/50 text-slate-300">
                   <td className="py-2.5 pr-4 text-white font-bold">{d.round}</td>
                   <td className="py-2.5 pr-4">{d.date}</td>
-                  <td className="py-2.5 pr-4">{d.numbers.join(", ")}</td>
-                  <td className="py-2.5 pr-4 text-rose-400">{d.bonus}</td>
+                  <td className="py-2.5 pr-4">
+                    <div className="flex flex-wrap gap-1 items-center">
+                      {d.numbers.map((n) => (
+                        <LottoBall key={n} number={n} size={22} interactive={false} />
+                      ))}
+                    </div>
+                  </td>
+                  <td className="py-2.5 pr-4">
+                    <LottoBall number={d.bonus} size={22} interactive={false} />
+                  </td>
                   <td className="py-2.5 pr-4">{d.sum}</td>
                   <td className="py-2.5">{d.oddCount}홀 {6 - (d.oddCount ?? 0)}짝</td>
                 </tr>
