@@ -31,7 +31,7 @@ export default function Footer() {
               <li>• Node.js / Express</li>
               <li>• Firebase (Auth & Firestore)</li>
               <li>• Google Gemini AI API</li>
-              <li>• Scikit-learn, XGBoost</li>
+              <li>• Scikit-learn (로컬 RF 실험)</li>
             </ul>
           </div>
 

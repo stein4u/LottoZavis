@@ -1,6 +1,11 @@
 import { readCache, writeCache } from "./cache.js";
 import { delay, fetchDraw, findLatestRound } from "./fetchDraw.js";
+import { trainRfModelSafe } from "./mlRf.js";
 import type { LottoDraw, LottoDrawsCache } from "./types.js";
+
+async function afterDrawCacheWrite(): Promise<void> {
+  await trainRfModelSafe();
+}
 
 const THROTTLE_MS = 120;
 
@@ -26,6 +31,7 @@ export async function bulkIngest(onProgress?: (round: number) => void): Promise<
   };
 
   writeCache(cache);
+  await afterDrawCacheWrite();
   return cache;
 }
 
@@ -40,6 +46,7 @@ export async function incrementalRefresh(): Promise<{ addedCount: number; latest
       lastUpdated: new Date().toISOString(),
     };
     writeCache(updated);
+    await afterDrawCacheWrite();
     return { addedCount: 0, latestRound: existing.latestRound };
   }
 
@@ -62,6 +69,7 @@ export async function incrementalRefresh(): Promise<{ addedCount: number; latest
   };
 
   writeCache(cache);
+  await afterDrawCacheWrite();
   return { addedCount, latestRound: upstreamLatest };
 }
 

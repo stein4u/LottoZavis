@@ -7,6 +7,10 @@ coverage/
 .env*
 !.env.example
 
+# Cached Random Forest model binaries (regenerate via refresh / ml/train_rf.py)
+data/ml/*.joblib
+
+
 # llm-wiki-lotto: wiki + AGENTS.md only (see llm-wiki-lotto/wiki/POLICY.md)
 llm-wiki-lotto/raw/
 llm-wiki-lotto/scripts/

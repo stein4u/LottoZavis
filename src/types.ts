@@ -6,7 +6,11 @@ export enum TabId {
   Contact = "contact"
 }
 
-export type ModelType = "random_forest" | "xgboost" | "lstm";
+export type ModelType = "mid_range" | "freq_tilt" | "absence_tilt";
+
+export type PredictorMode = "stats" | "ml-rf";
+
+export type PredictionMethod = "weighted-random" | "random-forest-ml";
 
 export type StatsWindow = "all" | 30 | 60 | 90 | 120 | 150;
 
@@ -38,11 +42,17 @@ export interface NumberProfile {
 
 export interface PredictionResult {
   numbers: number[];
-  method: "weighted-random";
-  statsWindow: StatsWindow | number | string;
+  method: PredictionMethod;
+  statsWindow?: StatsWindow | number | string;
   latestRound: number;
-  frequencyIncludesBonus: boolean;
+  frequencyIncludesBonus?: boolean;
   timestamp: string;
+  trainedAt?: string;
+  r2?: number;
+  hitMean?: number;
+  hitStd?: number;
+  hitHist?: number[];
+  bonusIncluded?: boolean;
 }
 
 export interface LottoDraw {

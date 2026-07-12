@@ -12,7 +12,8 @@ import {
   STATS_WINDOW_ERROR,
 } from "./server/lotto/statsEngine.js";
 import { buildNumberProfile } from "./server/lotto/numberProfile.js";
-import { generatePrediction } from "./server/lotto/predictEngine.js";
+import { generatePrediction, parseModelType } from "./server/lotto/predictEngine.js";
+import { getRfStatus, runRfPredict } from "./server/lotto/mlRf.js";
 import { getWikiPage, parseWikiNav } from "./server/wiki/wikiReader.js";
 import {
   buildWikiAskPrompt,
@@ -131,6 +132,18 @@ async function startServer() {
     }
   });
 
+  app.get("/api/ml/rf/status", (_req, res) => {
+    res.json(getRfStatus());
+  });
+
+  app.post("/api/ml/rf/predict", async (_req, res) => {
+    const result = await runRfPredict();
+    if (!result.success) {
+      return res.status(503).json(result);
+    }
+    res.json(result);
+  });
+
   app.get("/api/wiki/pages", (_req, res) => {
     res.json({ pages: parseWikiNav() });
   });
@@ -163,10 +176,19 @@ async function startServer() {
     }
 
     const { modelType, oddEvenBias, hotColdBias, excludeNumbers = [] } = req.body;
+    const parsedModel = parseModelType(modelType ?? "mid_range");
+    if (!parsedModel) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Invalid modelType. Use weight profiles: "mid_range", "freq_tilt", or "absence_tilt" (legacy random_forest/xgboost/lstm names are not accepted).',
+      });
+    }
+
     const stats = computeStats(cache.draws, window, cache.lastUpdated, { includeBonus: true });
 
     const result = generatePrediction(stats, {
-      modelType: modelType ?? "random_forest",
+      modelType: parsedModel,
       oddEvenBias: oddEvenBias ?? "balanced",
       hotColdBias: hotColdBias ?? "balanced",
       excludeNumbers,

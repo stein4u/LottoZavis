@@ -67,11 +67,14 @@ export interface SavedPrediction {
   numbers: number[];
   confidence?: number;
   modelType: string;
+  method?: "weighted-random" | "random-forest-ml";
   createdAt: any;
   oddEvenRatio?: string;
   sum?: number;
   statsWindow?: string | number;
   latestRound?: number;
+  r2?: number;
+  hitMean?: number;
 }
 
 export interface WikiComment {
@@ -126,11 +129,14 @@ export const fetchPredictionsHistory = async (userId: string): Promise<SavedPred
         numbers: data.numbers,
         confidence: data.confidence,
         modelType: data.modelType,
+        method: data.method,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
         oddEvenRatio: data.oddEvenRatio,
         sum: data.sum,
         statsWindow: data.statsWindow,
         latestRound: data.latestRound,
+        r2: data.r2,
+        hitMean: data.hitMean,
       });
     });
     return history;

@@ -1,6 +1,15 @@
 import type { LottoStats, StatsWindow } from "./types.js";
 
-export type ModelType = "random_forest" | "xgboost" | "lstm";
+export type ModelType = "mid_range" | "freq_tilt" | "absence_tilt";
+
+export const MODEL_TYPES: ModelType[] = ["mid_range", "freq_tilt", "absence_tilt"];
+
+export function parseModelType(value: unknown): ModelType | null {
+  if (value === "mid_range" || value === "freq_tilt" || value === "absence_tilt") {
+    return value;
+  }
+  return null;
+}
 
 export interface PredictOptions {
   modelType: ModelType;
@@ -60,11 +69,11 @@ function buildWeights(stats: LottoStats, options: PredictOptions): { number: num
       else weight -= 20;
     }
 
-    if (options.modelType === "random_forest") {
+    if (options.modelType === "mid_range") {
       if (i >= 10 && i <= 38) weight += 10;
-    } else if (options.modelType === "xgboost") {
+    } else if (options.modelType === "freq_tilt") {
       if (freq >= medianCount) weight += 15;
-    } else if (options.modelType === "lstm") {
+    } else if (options.modelType === "absence_tilt") {
       const absence = absenceMap.get(i) ?? 0;
       if (absence >= 5) weight += 20;
     }

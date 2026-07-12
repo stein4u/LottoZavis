@@ -1,0 +1,23 @@
+{
+  "r2": -0.2081558600469906,
+  "hitMean": 0.8170731707317073,
+  "hitStd": 0.7982916023928361,
+  "hitHist": [
+    97,
+    105,
+    36,
+    8,
+    0,
+    0,
+    0
+  ],
+  "trainedAt": "2026-07-12T11:56:46.475422+00:00",
+  "latestRound": 1231,
+  "sampleCount": 55350,
+  "roundSampleCount": 1230,
+  "bonusIncluded": false,
+  "lookbackW": 50,
+  "holdoutFrac": 0.2,
+  "nEstimators": 120,
+  "modelPath": "data/ml/rf_model.joblib"
+}

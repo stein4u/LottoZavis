@@ -42,9 +42,10 @@ export default function HowToTab() {
               <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded border border-indigo-500/20 inline-block">
                 <Compass className="h-5 w-5" />
               </div>
-              <h4 className="font-bold text-sm text-white">알고리즘 및 가중치 입력</h4>
+              <h4 className="font-bold text-sm text-white">추천 방식 선택</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Random Forest, XGBoost, LSTM 등 선호 엔진을 고르고 홀짝 비율 편향, 제외 번호를 입력한 뒤 '예측 알고리즘 구동' 버튼을 누릅니다.
+                <b>통계 가중 추천</b>에서는 빈도 균형형 / 고빈도 선호형 / 미출현 선호형 프로필과 홀짝·핫콜드 필터를 고른 뒤 조합을 생성합니다.
+                <b>랜덤포레스트 ML</b> 모드에서는 캐시된 학습 모델로 실험용 후보를 생성합니다 (당첨 보장 없음).
               </p>
             </div>
           </div>
@@ -56,9 +57,10 @@ export default function HowToTab() {
               <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20 inline-block">
                 <Smartphone className="h-5 w-5" />
               </div>
-              <h4 className="font-bold text-sm text-white">분석 결과 Firestore 저장</h4>
+              <h4 className="font-bold text-sm text-white">결과 확인 및 Firestore 저장</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                생성된 결과의 종합 신뢰 점수와 정밀도(Precision/Recall) 지표를 검증하고, 마음에 드는 세트를 Firestore 보관함에 즉시 영구 저장합니다.
+                통계 경로는 방식·구간·회차 메타데이터를, ML 경로는 R²·hit-count 스냅샷을 함께 표시합니다.
+                마음에 드는 세트를 Firestore 보관함에 저장해 이후 회차와 비교할 수 있습니다.
               </p>
             </div>
           </div>
@@ -84,7 +86,7 @@ export default function HowToTab() {
             <ul className="space-y-2.5 text-xs text-slate-400">
               <li className="flex items-start space-x-2">
                 <ArrowRight className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
-                <span>기본 제공되는 Random Forest, XGBoost 구현 파이썬 코드를 즉시 복사하여 본인의 연구 환경에 사용해 보세요.</span>
+                <span>위키에서 분석 프레임·확률 개념·실데이터 스냅샷을 읽고, 필요하면 로컬 `ml/` 파이썬 스크립트로 실험을 재현해 보세요.</span>
               </li>
               <li className="flex items-start space-x-2">
                 <ArrowRight className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
