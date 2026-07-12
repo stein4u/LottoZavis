@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { LottoDraw, LottoStats, StatsWindow } from "../types";
 import NumberDrillPanel from "./NumberDrillPanel";
+import LottoBall from "./LottoBall";
 import { exportDrawsCsv, exportStatsCsv } from "../lib/csvExport";
+import { buildFrequencyBuckets } from "../lib/frequencyBuckets";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, Legend
@@ -141,6 +143,8 @@ export default function AnalysisTab() {
   const hotNumbers = sortedByFreq.slice(0, 6).map((x) => x.number);
   const coldNumbers = sortedByFreq.slice(-6).reverse().map((x) => x.number);
   const topAbsence = [...stats.absence].sort((a, b) => b.drawsSince - a.drawsSince).slice(0, 6);
+  const freqByNumber = new Map(stats.frequencies.map((f) => [f.number, f.count]));
+  const frequencyBuckets = buildFrequencyBuckets(stats.frequencies, windowFilter);
   const PIE_COLORS = ["#fb7185", "#3b82f6"];
   const pieData = [
     { name: "홀수 (Odd)", value: stats.oddEvenRatio.odd },
@@ -148,6 +152,10 @@ export default function AnalysisTab() {
   ];
   const freqLabel = stats.frequencyIncludesBonus ? "보너스 포함" : "메인 6만 (보너스 미포함)";
   const updatedLabel = new Date(stats.lastUpdated).toLocaleString("ko-KR");
+  const bucketModeLabel =
+    windowFilter === 30 || windowFilter === 60 || windowFilter === 90
+      ? "출현횟수 1칸"
+      : "출현횟수 5단위 bin";
 
   return (
     <div className="space-y-8" id="analysis-tab-container">
@@ -333,6 +341,50 @@ export default function AnalysisTab() {
             <p className="text-xs text-slate-400 leading-relaxed">
               선택 구간 중 연속 번호 쌍이 포함된 회차: <b className="text-white">{stats.consecutivePairsCount}회</b>
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Frequency bucket ball stacks */}
+      <div className="bg-[#0D1426] rounded-xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+          <div className="flex items-center space-x-2">
+            <BarChart2 className="h-5 w-5 text-blue-400" />
+            <h3 className="font-bold text-white text-base">빈도 버켓 · 번호 공 스택</h3>
+          </div>
+          <div className="flex flex-wrap gap-2 text-[10px] font-mono text-slate-500">
+            <span>{freqLabel}</span>
+            <span>·</span>
+            <span>{bucketModeLabel}</span>
+          </div>
+        </div>
+        <p className="text-[11px] text-slate-500">
+          X축은 출현 횟수(또는 5회 구간)입니다. 각 칸에 해당 빈도의 번호 공이 쌓입니다. 공을 클릭하면 상세 패널이 열립니다.
+        </p>
+        <div className="overflow-x-auto pb-2">
+          <div className="flex items-end gap-3 min-w-min px-1">
+            {frequencyBuckets.map((bucket) => (
+              <div
+                key={bucket.key}
+                className="flex flex-col items-center gap-2 min-w-[2.5rem]"
+              >
+                <div className="flex flex-col-reverse items-center gap-1 min-h-[4rem]">
+                  {bucket.numbers.map((num) => (
+                    <LottoBall
+                      key={`${bucket.key}-${num}`}
+                      number={num}
+                      count={freqByNumber.get(num)}
+                      onClick={openDrillDown}
+                    />
+                  ))}
+                </div>
+                <div className="h-px w-full bg-slate-700" />
+                <span className="text-[10px] font-mono text-slate-400 whitespace-nowrap">
+                  {bucket.label}
+                </span>
+                <span className="text-[9px] font-mono text-slate-600">{bucket.numbers.length}개</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
